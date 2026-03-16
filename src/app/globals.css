@@ -12,9 +12,27 @@
   --foreground: #f1f5f9;
 }
 
-body {
+html, body {
+  height: 100%;
   background: var(--background);
   color: var(--foreground);
+}
+
+/* Safe area padding for notched phones (bottom nav) */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Prevent map from triggering iOS scroll bounce */
+.leaflet-container {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* h-dvh fallback for browsers that don't support it */
+.h-dvh {
+  height: 100vh;
+  height: 100dvh;
 }
 
 /* Leaflet overrides */
