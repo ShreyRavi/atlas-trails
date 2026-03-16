@@ -44,9 +44,11 @@ export function getCurrentUser(): User | null {
 }
 
 export async function signIn(email: string, password: string): Promise<User> {
-  const provider = process.env.NEXT_PUBLIC_DB_PROVIDER || 'local';
+  const provider = process.env.NEXT_PUBLIC_DB_PROVIDER;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (provider === 'supabase') {
+  if (provider === 'supabase' && supabaseUrl && supabaseKey) {
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -67,9 +69,11 @@ export async function signIn(email: string, password: string): Promise<User> {
 }
 
 export async function signUp(email: string, password: string): Promise<User> {
-  const provider = process.env.NEXT_PUBLIC_DB_PROVIDER || 'local';
+  const provider = process.env.NEXT_PUBLIC_DB_PROVIDER;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (provider === 'supabase') {
+  if (provider === 'supabase' && supabaseUrl && supabaseKey) {
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

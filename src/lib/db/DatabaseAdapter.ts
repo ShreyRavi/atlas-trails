@@ -25,9 +25,14 @@ let adapterInstance: DatabaseAdapter | null = null;
 export async function getAdapter(): Promise<DatabaseAdapter> {
   if (adapterInstance) return adapterInstance;
 
-  const provider = process.env.NEXT_PUBLIC_DB_PROVIDER || 'local';
+  const provider = process.env.NEXT_PUBLIC_DB_PROVIDER;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (provider === 'supabase') {
+  // Only use Supabase if explicitly configured with valid credentials
+  const useSupabase = provider === 'supabase' && !!supabaseUrl && !!supabaseKey;
+
+  if (useSupabase) {
     const { SupabaseAdapter } = await import('./SupabaseAdapter');
     adapterInstance = new SupabaseAdapter();
   } else {
