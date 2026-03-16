@@ -9,7 +9,7 @@ import { PinRepository } from '@/lib/repositories/PinRepository';
 import { seedDemoData } from '@/lib/services/SeedService';
 import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
-import MobileBottomBar from '@/components/MobileBottomBar';
+import MobileDrawer from '@/components/MobileDrawer';
 import TripSidebar from '@/components/TripSidebar';
 import PinModal from '@/components/PinModal';
 import TripWizard from '@/components/TripWizard';
@@ -29,7 +29,6 @@ export default function DashboardPage() {
     selectedPin, setLoading, isLoading,
   } = useAppStore();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
@@ -59,9 +58,6 @@ export default function DashboardPage() {
     load();
   }, []);
 
-  // Close sidebar when selecting a trip on mobile
-  const handleTripsToggle = () => setSidebarOpen((o) => !o);
-
   const handleExportPDF = async () => {
     if (!selectedTrip) return;
     setExporting(true);
@@ -85,25 +81,12 @@ export default function DashboardPage() {
 
       {/* ── Middle content ── */}
       <div className="flex flex-1 min-h-0 relative overflow-hidden">
-        {/* Desktop sidebar */}
+        {/* Desktop sidebar — hidden on mobile, MobileDrawer handles mobile */}
         <div className="hidden sm:flex w-72 lg:w-80 flex-shrink-0 border-r border-gray-200 dark:border-gray-800">
           <div className="w-full h-full overflow-hidden">
             <TripSidebar />
           </div>
         </div>
-
-        {/* Mobile sidebar — slide in from left over the map */}
-        {sidebarOpen && (
-          <div className="absolute inset-0 z-30 flex sm:hidden">
-            <div className="w-[85vw] max-w-xs h-full shadow-2xl overflow-hidden">
-              <TripSidebar />
-            </div>
-            <div
-              className="flex-1 bg-black/50"
-              onClick={() => setSidebarOpen(false)}
-            />
-          </div>
-        )}
 
         {/* Map area */}
         <div className="flex-1 min-w-0 relative">
@@ -130,8 +113,8 @@ export default function DashboardPage() {
             </button>
           )}
 
-          {/* Pin count pill */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+          {/* Pin count pill — above drawer on mobile, bottom-4 on desktop */}
+          <div className="absolute left-1/2 -translate-x-1/2 z-20 pointer-events-none bottom-[100px] sm:bottom-4">
             <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full px-3 py-1 shadow border border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
               {selectedTrip
                 ? `${pins.filter((p) => p.trip_id === selectedTrip.id).length} pins · ${selectedTrip.title}`
@@ -141,11 +124,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Mobile bottom bar — always visible on mobile ── */}
-      <MobileBottomBar
-        onTripsClick={handleTripsToggle}
-        tripsOpen={sidebarOpen}
-      />
+      {/* ── Mobile drawer — Google-Maps-style snap sheet, hidden on desktop ── */}
+      <MobileDrawer />
 
       {/* ── Overlays ── */}
       {selectedPin?.id && <PinModal />}
