@@ -42,8 +42,8 @@ export default function PinWizard() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md flex flex-col h-[92vh] sm:h-auto sm:max-h-[90vh] min-h-0">
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
           <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
         </div>
@@ -61,7 +61,7 @@ export default function PinWizard() {
             <X size={20} />
           </button>
         </div>
-        <div className="p-4">
+        <div className="flex-1 overflow-y-auto p-4 min-h-0">
           <PinForm
             initialData={initialCoords}
             onSave={handleSave}

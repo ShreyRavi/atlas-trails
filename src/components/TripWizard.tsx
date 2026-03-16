@@ -109,14 +109,14 @@ export default function TripWizard() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[96vh] sm:max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl h-[96vh] sm:h-auto sm:max-h-[90vh] flex flex-col min-h-0">
         {/* Drag handle — mobile only */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden flex-shrink-0">
           <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
         </div>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center gap-2">
             <Globe size={20} className="text-blue-600" />
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">Create New Trip</h2>
@@ -127,7 +127,7 @@ export default function TripWizard() {
         </div>
 
         {/* Steps indicator */}
-        <div className="flex items-center px-4 py-3 border-b border-gray-100 dark:border-gray-800 gap-1">
+        <div className="flex items-center px-4 py-3 border-b border-gray-100 dark:border-gray-800 gap-1 flex-shrink-0 overflow-x-auto">
           {STEPS.map((s, i) => (
             <div key={s} className="flex items-center gap-1">
               <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-colors
@@ -296,7 +296,7 @@ export default function TripWizard() {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
           <button
             onClick={() => step > 1 ? setStep((step - 1) as Step) : close()}
             className="flex items-center gap-1 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
