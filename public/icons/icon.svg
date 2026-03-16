@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#6366f1"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="40" fill="url(#bg)"/>
+  <!-- Globe circle -->
+  <circle cx="96" cy="96" r="52" fill="none" stroke="white" stroke-width="6" opacity="0.9"/>
+  <!-- Meridian lines -->
+  <ellipse cx="96" cy="96" rx="26" ry="52" fill="none" stroke="white" stroke-width="3" opacity="0.5"/>
+  <line x1="44" y1="96" x2="148" y2="96" stroke="white" stroke-width="3" opacity="0.5"/>
+  <!-- Travel path -->
+  <path d="M 60 115 Q 80 70 96 80 Q 112 90 135 65" fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/>
+  <!-- Pins -->
+  <circle cx="60" cy="115" r="7" fill="white"/>
+  <circle cx="96" cy="80" r="7" fill="white"/>
+  <circle cx="135" cy="65" r="7" fill="white"/>
+</svg>

@@ -1,0 +1,42 @@
+{
+  "name": "AtlasTrail",
+  "short_name": "AtlasTrail",
+  "description": "Map every journey. Track your travels on an interactive world map.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "maps", "utilities"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Add Pin",
+      "short_name": "Add Pin",
+      "description": "Quickly add a travel pin",
+      "url": "/dashboard?action=pin",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "New Trip",
+      "short_name": "New Trip",
+      "description": "Create a new trip",
+      "url": "/dashboard?action=trip",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
