@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { Pin } from '@/types';
+import ModalPortal from './ModalPortal';
 import { X, Play, Pause, RotateCcw, FastForward, Globe, MapPin } from 'lucide-react';
 
 type TimelapseMode = 'trip' | 'lifetime' | 'year';
@@ -65,7 +66,8 @@ export default function TimelapsePlayer() {
   const visiblePins = playbackPins.slice(0, currentIdx + 1);
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/90 flex flex-col">
+    <ModalPortal>
+    <div className="fixed inset-0 z-[9999] bg-black flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 text-white border-b border-white/10">
         <div className="flex items-center gap-3">
@@ -167,5 +169,6 @@ export default function TimelapsePlayer() {
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 }

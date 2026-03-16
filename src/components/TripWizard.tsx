@@ -6,6 +6,7 @@ import { TripRepository } from '@/lib/repositories/TripRepository';
 import { PinRepository } from '@/lib/repositories/PinRepository';
 import { Trip, Pin } from '@/types';
 import PinForm from '@/features/pins/PinForm';
+import ModalPortal from './ModalPortal';
 import { X, Globe, MapPin, ChevronRight, ChevronLeft, Plus, Trash2, GripVertical, Check } from 'lucide-react';
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -109,12 +110,17 @@ export default function TripWizard() {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl h-[96vh] sm:h-auto sm:max-h-[90vh] flex flex-col min-h-0">
+    <ModalPortal>
+    <div
+      className="fixed inset-0 z-[9999] flex flex-col justify-end sm:justify-center sm:items-center bg-black/60"
+      onPointerDown={(e) => { if (e.target === e.currentTarget) close(); }}
+    >
+      <div className="w-full sm:w-auto sm:max-w-2xl mx-auto flex flex-col" style={{ maxHeight: 'calc(100dvh - 56px)' }}>
         {/* Drag handle — mobile only */}
-        <div className="flex justify-center pt-3 pb-1 sm:hidden flex-shrink-0">
+        <div className="flex justify-center pt-3 pb-1 sm:hidden bg-white dark:bg-gray-900 rounded-t-2xl flex-shrink-0">
           <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
         </div>
+      <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full flex flex-col overflow-hidden flex-1 min-h-0">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -315,6 +321,8 @@ export default function TripWizard() {
           )}
         </div>
       </div>
+      </div>
     </div>
+    </ModalPortal>
   );
 }

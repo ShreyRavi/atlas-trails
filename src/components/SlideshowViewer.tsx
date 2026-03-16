@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { Pin } from '@/types';
+import ModalPortal from './ModalPortal';
 import { X, ChevronLeft, ChevronRight, Play, Pause, MapPin, Calendar, Building, Utensils, FileText } from 'lucide-react';
 
 export default function SlideshowViewer() {
@@ -32,7 +33,8 @@ export default function SlideshowViewer() {
   if (!current) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/90 flex flex-col">
+    <ModalPortal>
+    <div className="fixed inset-0 z-[9999] bg-black flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 text-white">
         <div>
@@ -122,5 +124,6 @@ export default function SlideshowViewer() {
         </button>
       </div>
     </div>
+    </ModalPortal>
   );
 }

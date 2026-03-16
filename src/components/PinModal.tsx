@@ -5,7 +5,32 @@ import { useAppStore } from '@/store/useAppStore';
 import { PinRepository } from '@/lib/repositories/PinRepository';
 import { Pin } from '@/types';
 import PinForm from '@/features/pins/PinForm';
+import ModalPortal from './ModalPortal';
 import { MapPin, Calendar, Building, Utensils, Star, FileText, X, Edit, Trash2 } from 'lucide-react';
+
+// Shared backdrop + sheet layout
+function Sheet({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  return (
+    <ModalPortal>
+      <div
+        className="fixed inset-0 z-[9999] flex flex-col justify-end sm:justify-center sm:items-center bg-black/50"
+        onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      >
+        {/* Top safe-gap on mobile so sheet never touches the very top */}
+        <div className="hidden sm:block" />
+        <div className="w-full sm:w-auto sm:max-w-lg mx-auto flex flex-col" style={{ maxHeight: 'calc(100dvh - 56px)' }}>
+          {/* Drag handle */}
+          <div className="flex justify-center pt-3 pb-1 sm:hidden bg-white dark:bg-gray-900 rounded-t-2xl flex-shrink-0">
+            <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+          </div>
+          <div className="flex flex-col bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex-1 min-h-0">
+            {children}
+          </div>
+        </div>
+      </div>
+    </ModalPortal>
+  );
+}
 
 export default function PinModal() {
   const { selectedPin, setSelectedPin, removePin, updatePin } = useAppStore();
@@ -29,127 +54,85 @@ export default function PinModal() {
 
   if (editing) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-        <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[92vh] overflow-y-auto">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Pin</h2>
-            <button onClick={() => setEditing(false)} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
-              <X size={20} />
-            </button>
-          </div>
-          <div className="p-4">
-            <PinForm
-              initialData={selectedPin}
-              onSave={handleSave}
-              onCancel={() => setEditing(false)}
-            />
-          </div>
+      <Sheet onClose={() => setEditing(false)}>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Pin</h2>
+          <button onClick={() => setEditing(false)} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500">
+            <X size={20} />
+          </button>
         </div>
-      </div>
+        <div className="flex-1 overflow-y-auto p-4 min-h-0">
+          <PinForm initialData={selectedPin} onSave={handleSave} onCancel={() => setEditing(false)} />
+        </div>
+      </Sheet>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg flex flex-col h-[92vh] sm:h-auto sm:max-h-[90vh] min-h-0">
-        {/* Drag handle — mobile only */}
-        <div className="flex justify-center pt-3 pb-1 sm:hidden flex-shrink-0">
-          <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+    <Sheet onClose={() => setSelectedPin(null)}>
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <div className="min-w-0 pr-2">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{selectedPin.title || 'Untitled Pin'}</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+            {[selectedPin.city, selectedPin.province, selectedPin.country].filter(Boolean).join(', ')}
+          </p>
         </div>
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedPin.title || 'Untitled Pin'}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {[selectedPin.city, selectedPin.province, selectedPin.country].filter(Boolean).join(', ')}
-            </p>
-          </div>
-          <button
-            onClick={() => setSelectedPin(null)}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
-          >
-            <X size={20} />
-          </button>
-        </div>
+        <button onClick={() => setSelectedPin(null)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 flex-shrink-0">
+          <X size={20} />
+        </button>
+      </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
-          {selectedPin.visit_date && (
-            <div className="flex items-start gap-3">
-              <Calendar size={18} className="text-blue-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Visit Date</p>
-                <p className="text-sm text-gray-800 dark:text-gray-200">{selectedPin.visit_date}</p>
-              </div>
-            </div>
-          )}
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+        {selectedPin.visit_date && (
+          <Row icon={<Calendar size={16} className="text-blue-500" />} label="Visit Date" value={selectedPin.visit_date} />
+        )}
+        {selectedPin.lodging_name && (
+          <Row icon={<Building size={16} className="text-green-500" />} label="Lodging" value={selectedPin.lodging_name} />
+        )}
+        {selectedPin.attractions && (
+          <Row icon={<Star size={16} className="text-yellow-500" />} label="Attractions" value={selectedPin.attractions} />
+        )}
+        {selectedPin.food_drink && (
+          <Row icon={<Utensils size={16} className="text-orange-500" />} label="Food & Drink" value={selectedPin.food_drink} />
+        )}
+        {selectedPin.tips_notes && (
+          <Row icon={<FileText size={16} className="text-purple-500" />} label="Notes" value={selectedPin.tips_notes} />
+        )}
+        <Row
+          icon={<MapPin size={16} className="text-red-500" />}
+          label="Coordinates"
+          value={`${selectedPin.latitude.toFixed(4)}, ${selectedPin.longitude.toFixed(4)}`}
+        />
+      </div>
 
-          {selectedPin.lodging_name && (
-            <div className="flex items-start gap-3">
-              <Building size={18} className="text-green-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Lodging</p>
-                <p className="text-sm text-gray-800 dark:text-gray-200">{selectedPin.lodging_name}</p>
-              </div>
-            </div>
-          )}
+      {/* Actions */}
+      <div className="flex items-center gap-2 p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <button
+          onClick={() => setEditing(true)}
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm"
+        >
+          <Edit size={15} /> Edit
+        </button>
+        <button
+          onClick={handleDelete}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 dark:hover:bg-red-900 transition-colors font-medium text-sm"
+        >
+          <Trash2 size={15} /> Delete
+        </button>
+      </div>
+    </Sheet>
+  );
+}
 
-          {selectedPin.attractions && (
-            <div className="flex items-start gap-3">
-              <Star size={18} className="text-yellow-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Attractions</p>
-                <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{selectedPin.attractions}</p>
-              </div>
-            </div>
-          )}
-
-          {selectedPin.food_drink && (
-            <div className="flex items-start gap-3">
-              <Utensils size={18} className="text-orange-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Food & Drink</p>
-                <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{selectedPin.food_drink}</p>
-              </div>
-            </div>
-          )}
-
-          {selectedPin.tips_notes && (
-            <div className="flex items-start gap-3">
-              <FileText size={18} className="text-purple-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Notes</p>
-                <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{selectedPin.tips_notes}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-start gap-3">
-            <MapPin size={18} className="text-red-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Coordinates</p>
-              <p className="text-sm text-gray-800 dark:text-gray-200">
-                {selectedPin.latitude.toFixed(4)}, {selectedPin.longitude.toFixed(4)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2 p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <button
-            onClick={() => setEditing(true)}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium"
-          >
-            <Edit size={16} /> Edit
-          </button>
-          <button
-            onClick={handleDelete}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 dark:bg-red-950 dark:text-red-400 transition-colors font-medium"
-          >
-            <Trash2 size={16} /> Delete
-          </button>
-        </div>
+function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="mt-0.5 flex-shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</p>
+        <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">{value}</p>
       </div>
     </div>
   );
