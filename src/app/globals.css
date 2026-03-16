@@ -23,19 +23,36 @@ html, body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Prevent map from triggering iOS scroll bounce */
-.leaflet-container {
-  overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
-}
-
 /* h-dvh fallback for browsers that don't support it */
 .h-dvh {
   height: 100vh;
   height: 100dvh;
 }
 
-/* Modal root — always floats above the Leaflet map stacking context */
+/*
+ * THE KEY FIX — Leaflet stacking context isolation
+ *
+ * Leaflet's CSS sets z-index: 200–1000 on its internal panes
+ * (.leaflet-tile-pane, .leaflet-marker-pane, .leaflet-top, etc.)
+ * BUT .leaflet-container itself has no z-index, so it never forms its
+ * own stacking context.  That means those pane z-indexes (200, 600, 1000…)
+ * escape into the ROOT stacking context and paint above our Navbar (z-40)
+ * and MobileDrawer (z-50).
+ *
+ * Setting z-index: 0 on .leaflet-container forces it to create its own
+ * stacking context, which traps all internal pane z-indexes inside it.
+ * Our UI chrome (navbar z-50, drawer z-50, modals z-99999) then sits
+ * cleanly above the map in the root context.
+ */
+.leaflet-container {
+  position: relative;        /* already set by Leaflet — kept for clarity */
+  z-index: 0 !important;    /* create stacking context, contain pane z-indexes */
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  font-family: inherit;
+}
+
+/* Modal root — always floats above everything */
 #modal-root {
   position: fixed;
   top: 0;
@@ -47,11 +64,6 @@ html, body {
 }
 #modal-root > * {
   pointer-events: all;
-}
-
-/* Leaflet overrides */
-.leaflet-container {
-  font-family: inherit;
 }
 
 .leaflet-popup-content-wrapper {

@@ -36,7 +36,7 @@ export default function MobileDrawer() {
 
   return (
     <div
-      className="sm:hidden fixed left-0 right-0 bottom-0 z-30 bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl border-t border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden"
+      className="sm:hidden fixed left-0 right-0 bottom-0 z-[50] bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl border-t border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden"
       style={{
         height: expanded ? '62vh' : '88px',
         transition: 'height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',

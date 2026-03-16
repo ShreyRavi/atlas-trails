@@ -51,7 +51,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="h-14 flex items-center justify-between px-3 sm:px-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-40 flex-shrink-0">
+    <nav className="h-14 flex items-center justify-between px-3 sm:px-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-[60] flex-shrink-0 relative">
       {/* Logo */}
       <Link href="/dashboard" className="flex items-center gap-2">
         <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
