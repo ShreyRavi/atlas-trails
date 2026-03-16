@@ -33,6 +33,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.className} antialiased`}>
         <ServiceWorkerRegister />
         {children}
+        {/* Portal target for all modals — rendered last so it's always above everything */}
+        <div id="modal-root" />
       </body>
     </html>
   );

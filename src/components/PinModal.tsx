@@ -19,11 +19,11 @@ function Sheet({ onClose, children }: { onClose: () => void; children: React.Rea
         {/* Top safe-gap on mobile so sheet never touches the very top */}
         <div className="hidden sm:block" />
         <div className="w-full sm:w-auto sm:max-w-lg mx-auto flex flex-col" style={{ maxHeight: 'calc(100dvh - 56px)' }}>
-          {/* Drag handle */}
-          <div className="flex justify-center pt-3 pb-1 sm:hidden bg-white dark:bg-gray-900 rounded-t-2xl flex-shrink-0">
-            <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
-          </div>
           <div className="flex flex-col bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex-1 min-h-0">
+            {/* Drag handle inside the container — one visual block, no double header */}
+            <div className="flex justify-center pt-3 pb-1 sm:hidden flex-shrink-0">
+              <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+            </div>
             {children}
           </div>
         </div>

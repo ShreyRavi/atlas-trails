@@ -1,21 +1,20 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 /**
- * Renders children directly into <body> via a React portal.
- * This breaks out of any CSS transform / stacking-context created by the
- * Leaflet map, so modals always appear on top regardless of z-index on the map.
+ * Renders children into #modal-root (appended after all app content in <body>).
+ * This guarantees modals are always painted on top of the Leaflet map,
+ * regardless of any stacking context the map creates.
  */
 export default function ModalPortal({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
+  const [target, setTarget] = useState<Element | null>(null);
 
   useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
+    setTarget(document.getElementById('modal-root') ?? document.body);
   }, []);
 
-  if (!mounted) return null;
-  return createPortal(children, document.body);
+  if (!target) return null;
+  return createPortal(children, target);
 }

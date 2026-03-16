@@ -116,11 +116,11 @@ export default function TripWizard() {
       onPointerDown={(e) => { if (e.target === e.currentTarget) close(); }}
     >
       <div className="w-full sm:w-auto sm:max-w-2xl mx-auto flex flex-col" style={{ maxHeight: 'calc(100dvh - 56px)' }}>
-        {/* Drag handle — mobile only */}
-        <div className="flex justify-center pt-3 pb-1 sm:hidden bg-white dark:bg-gray-900 rounded-t-2xl flex-shrink-0">
+      <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full flex flex-col overflow-hidden flex-1 min-h-0">
+        {/* Drag handle inside the container — one visual block, no double header */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden flex-shrink-0">
           <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
         </div>
-      <div className="bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full flex flex-col overflow-hidden flex-1 min-h-0">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex items-center gap-2">
