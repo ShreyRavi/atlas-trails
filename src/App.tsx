@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Globe, { type GlobeMethods } from 'react-globe.gl'
-import { tripArcs, type Stop } from './types'
+import { tripArcs, type Arc, type Stop } from './types'
 import { ErrorBoundary } from './ErrorBoundary'
 import Unsupported from './Unsupported'
 import { hasWebGL } from './webgl'
 import CommandBar from './CommandBar'
 import { loadTrip, saveTrip, clearTrip } from './storage'
+import { usePlayback, STEP_MS } from './usePlayback'
+
+type PlayArc = Arc & { _draw: boolean }
 
 const GLOBE_IMG = '/earth-night.jpg'
 const GLOBE_BUMP = '/earth-topology.png'
@@ -34,7 +37,17 @@ function GlobeStage() {
   const globeRef = useRef<GlobeMethods | undefined>(undefined)
   const { w, h } = useWindowSize()
   const [stops, setStops] = useState<Stop[]>(loadTrip)
-  const arcs = tripArcs(stops)
+  const arcs = useMemo(() => tripArcs(stops), [stops])
+  const { mode, step, play } = usePlayback(globeRef, stops, arcs.length)
+
+  // While playing, reveal arcs 0..step and mark the newest as drawing so only
+  // it animates; otherwise show every arc as a solid line.
+  const visibleArcs: PlayArc[] = useMemo(() => {
+    if (mode === 'playing') {
+      return arcs.slice(0, step + 1).map((a, i) => ({ ...a, _draw: i === step }))
+    }
+    return arcs.map((a) => ({ ...a, _draw: false }))
+  }, [arcs, mode, step])
 
   useEffect(() => {
     const g = globeRef.current
@@ -76,16 +89,17 @@ function GlobeStage() {
         backgroundColor="#060912"
         atmosphereColor="#3a8bff"
         atmosphereAltitude={0.18}
-        arcsData={arcs}
+        arcsData={visibleArcs}
         arcStartLat="startLat"
         arcStartLng="startLng"
         arcEndLat="endLat"
         arcEndLng="endLng"
         arcColor={() => ['rgba(56,232,255,0.2)', 'rgba(56,232,255,0.95)']}
-        arcStroke={0.6}
-        arcDashLength={0.6}
-        arcDashGap={0.25}
-        arcDashAnimateTime={2200}
+        arcStroke={0.55}
+        arcDashLength={1}
+        arcDashGap={(d: object) => ((d as PlayArc)._draw ? 1 : 0)}
+        arcDashInitialGap={(d: object) => ((d as PlayArc)._draw ? 1 : 0)}
+        arcDashAnimateTime={(d: object) => ((d as PlayArc)._draw ? STEP_MS : 0)}
         arcAltitudeAutoScale={0.4}
         pointsData={stops}
         pointLat="lat"
@@ -95,7 +109,14 @@ function GlobeStage() {
         pointRadius={0.35}
         pointLabel={(d: object) => (d as Stop).name}
       />
-      <CommandBar stops={stops} onAdd={addStop} onRemove={removeStop} onReset={reset} />
+      <CommandBar
+        stops={stops}
+        onAdd={addStop}
+        onRemove={removeStop}
+        onReset={reset}
+        onPlay={play}
+        mode={mode}
+      />
     </div>
   )
 }

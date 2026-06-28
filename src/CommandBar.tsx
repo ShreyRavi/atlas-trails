@@ -1,15 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { loadCities, searchCities, cityToStop, type City } from './cities'
 import type { Stop } from './types'
+import type { PlayMode } from './usePlayback'
 
 interface Props {
   stops: Stop[]
   onAdd: (stop: Stop) => void
   onRemove: (index: number) => void
   onReset: () => void
+  onPlay: () => void
+  mode: PlayMode
 }
 
-export default function CommandBar({ stops, onAdd, onRemove, onReset }: Props) {
+export default function CommandBar({ stops, onAdd, onRemove, onReset, onPlay, mode }: Props) {
+  const playing = mode === 'playing'
   const [cities, setCities] = useState<City[] | null>(null)
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
@@ -49,6 +53,7 @@ export default function CommandBar({ stops, onAdd, onRemove, onReset }: Props) {
 
   return (
     <div className="commandbar">
+      {!playing && (
       <div className="cb-input-wrap">
         <input
           ref={inputRef}
@@ -82,8 +87,9 @@ export default function CommandBar({ stops, onAdd, onRemove, onReset }: Props) {
           </ul>
         )}
       </div>
+      )}
 
-      {stops.length > 0 && (
+      {stops.length > 0 && !playing && (
         <>
           <ol className="cb-stops">
             {stops.map((s, i) => (
@@ -101,6 +107,9 @@ export default function CommandBar({ stops, onAdd, onRemove, onReset }: Props) {
             ))}
           </ol>
           <div className="cb-actions">
+            <button className="cb-btn cb-btn-primary" onClick={onPlay} disabled={stops.length === 0}>
+              {mode === 'done' ? '↺ Replay' : '▶ Play'}
+            </button>
             <button className="cb-btn cb-btn-ghost" onClick={onReset}>
               Reset
             </button>
