@@ -1,39 +1,29 @@
 {
   "name": "atlas-trails",
-  "version": "0.1.0",
   "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.99.2",
-    "@types/leaflet": "^1.9.21",
-    "@types/leaflet.markercluster": "^1.5.6",
-    "@types/uuid": "^10.0.0",
-    "leaflet": "^1.9.4",
-    "leaflet.markercluster": "^1.5.3",
-    "lucide-react": "^0.577.0",
-    "next": "16.1.6",
-    "pdf-lib": "^1.17.1",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "react-leaflet": "^5.0.0",
-    "react-leaflet-cluster": "^4.0.0",
-    "sharp": "^0.34.5",
-    "uuid": "^13.0.0",
-    "zustand": "^5.0.12"
+    "lz-string": "^1.5.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-globe.gl": "^2.38.0",
+    "three": "^0.185.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.6",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.185.0",
+    "@vitejs/plugin-react": "^6.0.2",
+    "oxlint": "^1.69.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.0"
   }
 }
