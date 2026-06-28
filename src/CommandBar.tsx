@@ -6,9 +6,10 @@ interface Props {
   stops: Stop[]
   onAdd: (stop: Stop) => void
   onRemove: (index: number) => void
+  onReset: () => void
 }
 
-export default function CommandBar({ stops, onAdd, onRemove }: Props) {
+export default function CommandBar({ stops, onAdd, onRemove, onReset }: Props) {
   const [cities, setCities] = useState<City[] | null>(null)
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
@@ -83,21 +84,28 @@ export default function CommandBar({ stops, onAdd, onRemove }: Props) {
       </div>
 
       {stops.length > 0 && (
-        <ol className="cb-stops">
-          {stops.map((s, i) => (
-            <li key={`${s.name}-${i}`} className="cb-stop">
-              <span className="cb-stop-num">{i + 1}</span>
-              <span className="cb-stop-name">{s.name}</span>
-              <button
-                className="cb-stop-x"
-                onClick={() => onRemove(i)}
-                aria-label={`Remove ${s.name}`}
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ol>
+        <>
+          <ol className="cb-stops">
+            {stops.map((s, i) => (
+              <li key={`${s.name}-${i}`} className="cb-stop">
+                <span className="cb-stop-num">{i + 1}</span>
+                <span className="cb-stop-name">{s.name}</span>
+                <button
+                  className="cb-stop-x"
+                  onClick={() => onRemove(i)}
+                  aria-label={`Remove ${s.name}`}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ol>
+          <div className="cb-actions">
+            <button className="cb-btn cb-btn-ghost" onClick={onReset}>
+              Reset
+            </button>
+          </div>
+        </>
       )}
     </div>
   )

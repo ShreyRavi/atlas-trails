@@ -5,6 +5,7 @@ import { ErrorBoundary } from './ErrorBoundary'
 import Unsupported from './Unsupported'
 import { hasWebGL } from './webgl'
 import CommandBar from './CommandBar'
+import { loadTrip, saveTrip, clearTrip } from './storage'
 
 const GLOBE_IMG = '/earth-night.jpg'
 const GLOBE_BUMP = '/earth-topology.png'
@@ -32,7 +33,7 @@ export default function App() {
 function GlobeStage() {
   const globeRef = useRef<GlobeMethods | undefined>(undefined)
   const { w, h } = useWindowSize()
-  const [stops, setStops] = useState<Stop[]>([])
+  const [stops, setStops] = useState<Stop[]>(loadTrip)
   const arcs = tripArcs(stops)
 
   useEffect(() => {
@@ -43,6 +44,11 @@ function GlobeStage() {
     g.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 0)
   }, [])
 
+  // Persist the trip on every change.
+  useEffect(() => {
+    saveTrip(stops)
+  }, [stops])
+
   function addStop(stop: Stop) {
     setStops((prev) => [...prev, stop])
     // Fly the camera to the freshly added stop.
@@ -51,6 +57,12 @@ function GlobeStage() {
 
   function removeStop(index: number) {
     setStops((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  function reset() {
+    setStops([])
+    clearTrip()
+    globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
   }
 
   return (
@@ -83,7 +95,7 @@ function GlobeStage() {
         pointRadius={0.35}
         pointLabel={(d: object) => (d as Stop).name}
       />
-      <CommandBar stops={stops} onAdd={addStop} onRemove={removeStop} />
+      <CommandBar stops={stops} onAdd={addStop} onRemove={removeStop} onReset={reset} />
     </div>
   )
 }

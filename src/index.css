@@ -145,3 +145,35 @@ body,
 .cb-stop-x:hover {
   opacity: 1;
 }
+
+.cb-actions {
+  display: flex;
+  gap: 8px;
+}
+.cb-btn {
+  flex: 1;
+  padding: 11px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 12px;
+  border: 1px solid var(--panel-border);
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.cb-btn-primary {
+  color: #061018;
+  background: var(--arc);
+  border-color: transparent;
+}
+.cb-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.cb-btn-ghost {
+  color: var(--fg);
+  background: var(--panel);
+}
+.cb-btn-ghost:hover {
+  border-color: var(--arc);
+}
