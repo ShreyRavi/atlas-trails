@@ -7,6 +7,7 @@ import { hasWebGL } from './webgl'
 import CommandBar from './CommandBar'
 import { loadTrip, saveTrip, clearTrip } from './storage'
 import { usePlayback, STEP_MS } from './usePlayback'
+import { tripFromHash, shareUrl, clearHash } from './share'
 
 type PlayArc = Arc & { _draw: boolean }
 
@@ -36,7 +37,9 @@ export default function App() {
 function GlobeStage() {
   const globeRef = useRef<GlobeMethods | undefined>(undefined)
   const { w, h } = useWindowSize()
-  const [stops, setStops] = useState<Stop[]>(loadTrip)
+  const sharedTrip = useMemo(tripFromHash, [])
+  const [readOnly, setReadOnly] = useState(sharedTrip !== null)
+  const [stops, setStops] = useState<Stop[]>(() => sharedTrip ?? loadTrip())
   const arcs = useMemo(() => tripArcs(stops), [stops])
   const { mode, step, play } = usePlayback(globeRef, stops, arcs.length)
 
@@ -57,10 +60,19 @@ function GlobeStage() {
     g.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 0)
   }, [])
 
-  // Persist the trip on every change.
+  // Persist the trip on every change — but never overwrite the user's own
+  // saved trip while viewing someone else's shared link.
   useEffect(() => {
-    saveTrip(stops)
-  }, [stops])
+    if (!readOnly) saveTrip(stops)
+  }, [stops, readOnly])
+
+  // Auto-play a shared trip once the globe is ready.
+  useEffect(() => {
+    if (!readOnly) return
+    const t = setTimeout(() => play(), 700)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function addStop(stop: Stop) {
     setStops((prev) => [...prev, stop])
@@ -75,6 +87,14 @@ function GlobeStage() {
   function reset() {
     setStops([])
     clearTrip()
+    globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
+  }
+
+  // From a shared link: drop into the empty builder to make your own trip.
+  function createOwn() {
+    clearHash()
+    setReadOnly(false)
+    setStops([])
     globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
   }
 
@@ -116,6 +136,9 @@ function GlobeStage() {
         onReset={reset}
         onPlay={play}
         mode={mode}
+        readOnly={readOnly}
+        getShareUrl={() => shareUrl(stops)}
+        onCreateOwn={createOwn}
       />
     </div>
   )

@@ -121,6 +121,9 @@ body,
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
+.cb-stop-static {
+  padding-right: 12px;
+}
 .cb-stop-num {
   display: inline-flex;
   align-items: center;
