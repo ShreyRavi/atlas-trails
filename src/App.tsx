@@ -41,7 +41,7 @@ function GlobeStage() {
   const [readOnly, setReadOnly] = useState(sharedTrip !== null)
   const [stops, setStops] = useState<Stop[]>(() => sharedTrip ?? loadTrip())
   const arcs = useMemo(() => tripArcs(stops), [stops])
-  const { mode, step, play } = usePlayback(globeRef, stops, arcs.length)
+  const { mode, step, play } = usePlayback(globeRef, stops, arcs)
 
   // While playing, reveal arcs 0..step and mark the newest as drawing so only
   // it animates; otherwise show every arc as a solid line.
@@ -90,11 +90,13 @@ function GlobeStage() {
     globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
   }
 
-  // From a shared link: drop into the empty builder to make your own trip.
+  // From a shared link: leave the viewer for the builder. Restore the
+  // visitor's OWN saved trip (if any) rather than clobbering it with empty —
+  // the shared trip was never persisted.
   function createOwn() {
     clearHash()
     setReadOnly(false)
-    setStops([])
+    setStops(loadTrip())
     globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
   }
 

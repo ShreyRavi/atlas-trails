@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import type { GlobeMethods } from 'react-globe.gl'
-import type { Stop } from './types'
+import type { Arc, Stop } from './types'
 
 export type PlayMode = 'idle' | 'playing' | 'done'
 
@@ -9,12 +9,15 @@ const FLY_MS = 900
 
 /** Drives the sequential trip animation: flies the camera stop-to-stop while
  *  the newest arc draws itself. `step` is the index of the arc currently
- *  drawing (-1 when not playing a specific arc). */
+ *  drawing (-1 when not playing a specific arc). Camera targets are derived
+ *  from `arcs` (not `stops`) because consecutive duplicate stops produce fewer
+ *  arcs, so arc indices and stop indices can diverge. */
 export function usePlayback(
   globeRef: RefObject<GlobeMethods | undefined>,
   stops: Stop[],
-  arcCount: number,
+  arcs: Arc[],
 ) {
+  const arcCount = arcs.length
   const [mode, setMode] = useState<PlayMode>('idle')
   const [step, setStep] = useState(-1)
   const timer = useRef<number | null>(null)
@@ -54,9 +57,9 @@ export function usePlayback(
   useEffect(() => {
     if (mode !== 'playing' || step < 0) return
     const g = globeRef.current
-    const dest = stops[step + 1]
+    const dest = arcs[step]
     if (g && dest) {
-      g.pointOfView({ lat: dest.lat, lng: dest.lng, altitude: 1.9 }, Math.round(STEP_MS * 0.7))
+      g.pointOfView({ lat: dest.endLat, lng: dest.endLng, altitude: 1.9 }, Math.round(STEP_MS * 0.7))
     }
     clearTimer()
     timer.current = window.setTimeout(() => {
@@ -64,7 +67,7 @@ export function usePlayback(
       else finish()
     }, STEP_MS)
     return clearTimer
-  }, [mode, step, stops, arcCount, globeRef, finish])
+  }, [mode, step, arcs, arcCount, globeRef, finish])
 
   // Editing the trip cancels any playback and returns to build mode.
   useEffect(() => {
