@@ -111,6 +111,12 @@ export default function CommandBar({
   // ---- Builder mode ----
   return (
     <div className="commandbar">
+      {!playing && stops.length === 0 && (
+        <div className="cb-hero">
+          <h1>Atlas Trails</h1>
+          <p>Add the cities of your trip, hit play, and watch it fly across the globe.</p>
+        </div>
+      )}
       {!playing && (
         <div className="cb-input-wrap">
           <input

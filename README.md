@@ -1,32 +1,35 @@
-# React + TypeScript + Vite
+# Atlas Trails
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Add the cities of a trip, hit play, and watch it fly across a 3D globe as a
+cinematic arc. Share a live link anyone can open in their browser — no login,
+no install.
 
-Currently, two official plugins are available:
+## How it works
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **No backend.** Your trips live in `localStorage`. Sharing serializes the
+  trip into the URL hash (`#t=<compressed>`), so a link contains the whole trip
+  and works forever with zero infrastructure.
+- **The globe** is [`react-globe.gl`](https://github.com/vasturiano/react-globe.gl)
+  (three.js). Cities come from a bundled, population-sorted GeoNames list
+  (`public/cities.json`, top 10k) — fully offline, no API keys.
+- **Sharing**: open a `#t=` link and the trip auto-plays in a read-only viewer.
+  Tampered or malformed links fall back to the empty builder. The visitor's own
+  saved trip is never overwritten while viewing someone else's.
 
-## React Compiler
+## Develop
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # tsc -b && vite build -> dist/
+npm run preview  # serve the production build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+WebGL is required for the globe; browsers without it get a graceful fallback
+screen.
+
+## Deploy
+
+Static site, deployed to Vercel (framework auto-detected as Vite, output
+`dist/`). Pushes to a branch get preview deploys; merging to `main` promotes to
+production. See `vercel.json` for asset caching.

@@ -43,6 +43,24 @@ body,
   gap: 10px;
 }
 
+.cb-hero {
+  text-align: center;
+  padding: 4px 8px 0;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.7);
+}
+.cb-hero h1 {
+  margin: 0 0 6px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.cb-hero p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  opacity: 0.7;
+}
+
 .cb-input-wrap {
   position: relative;
 }
