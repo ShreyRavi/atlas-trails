@@ -8,6 +8,8 @@ import CommandBar from './CommandBar'
 import { loadTrip, saveTrip, clearTrip } from './storage'
 import { usePlayback } from './usePlayback'
 import { tripFromHash, shareUrl, clearHash } from './share'
+import { listTrips, upsertTrip, deleteTrip, type SavedTrip } from './trips'
+import TripsPanel from './TripsPanel'
 
 const GlobeCanvas = lazy(() => import('./GlobeCanvas'))
 
@@ -40,6 +42,11 @@ function GlobeStage() {
   const [title, setTitle] = useState(initialTrip.title ?? '')
   const [stops, setStops] = useState<Stop[]>(initialTrip.stops)
   const arcs = useMemo(() => tripArcs(stops), [stops])
+
+  // Trip library (explicit named saves, separate from the autosaved working trip).
+  const [library, setLibrary] = useState<SavedTrip[]>(() => (sharedTrip ? [] : listTrips()))
+  const [libOpen, setLibOpen] = useState(false)
+  const [currentId, setCurrentId] = useState<string | null>(null)
   const { mode, step, play } = usePlayback(globeRef, stops, arcs)
 
   // While playing, reveal arcs 0..step and mark the newest as drawing so only
@@ -91,8 +98,34 @@ function GlobeStage() {
   function reset() {
     setStops([])
     setTitle('')
+    setCurrentId(null)
     clearTrip()
     globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
+  }
+
+  // Save the current trip into the library (updates in place if already saved).
+  function saveToLibrary() {
+    if (stops.length === 0) return
+    const id = currentId ?? crypto.randomUUID()
+    upsertTrip({ title: title.trim() || undefined, stops }, id, Date.now())
+    setCurrentId(id)
+    setLibrary(listTrips())
+  }
+
+  function loadFromLibrary(t: SavedTrip) {
+    clearHash()
+    setReadOnly(false)
+    setTitle(t.title)
+    setStops(t.stops)
+    setCurrentId(t.id)
+    setLibOpen(false)
+    globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
+  }
+
+  function removeFromLibrary(id: string) {
+    deleteTrip(id)
+    setLibrary(listTrips())
+    if (currentId === id) setCurrentId(null)
   }
 
   // From a shared link: leave the viewer for the builder. Restore the
@@ -104,6 +137,8 @@ function GlobeStage() {
     setReadOnly(false)
     setTitle(own.title ?? '')
     setStops(own.stops)
+    setCurrentId(null)
+    setLibrary(listTrips())
     globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
   }
 
@@ -119,6 +154,16 @@ function GlobeStage() {
           onReady={() => setGlobeReady(true)}
         />
       </Suspense>
+      {!readOnly && (
+        <TripsPanel
+          open={libOpen}
+          trips={library}
+          currentId={currentId}
+          onToggle={() => setLibOpen((o) => !o)}
+          onLoad={loadFromLibrary}
+          onDelete={removeFromLibrary}
+        />
+      )}
       <CommandBar
         stops={stops}
         title={title}
@@ -128,6 +173,7 @@ function GlobeStage() {
         onMove={moveStop}
         onReset={reset}
         onPlay={play}
+        onSave={saveToLibrary}
         mode={mode}
         readOnly={readOnly}
         getShareUrl={() => shareUrl({ title: title.trim() || undefined, stops })}

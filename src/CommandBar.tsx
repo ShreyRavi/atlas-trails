@@ -24,6 +24,7 @@ interface Props {
   onMove: (index: number, dir: -1 | 1) => void
   onReset: () => void
   onPlay: () => void
+  onSave: () => void
   mode: PlayMode
   readOnly: boolean
   getShareUrl: () => string
@@ -39,6 +40,7 @@ export default function CommandBar({
   onMove,
   onReset,
   onPlay,
+  onSave,
   mode,
   readOnly,
   getShareUrl,
@@ -49,7 +51,14 @@ export default function CommandBar({
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
   const [copied, setCopied] = useState(false)
+  const [saved, setSaved] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  function save() {
+    onSave()
+    setSaved(true)
+    setTimeout(() => setSaved(false), 1800)
+  }
 
   useEffect(() => {
     if (readOnly) return
@@ -224,6 +233,9 @@ export default function CommandBar({
             </button>
             <button className="cb-btn cb-btn-ghost" onClick={share}>
               {copied ? '✓ Copied' : '🔗 Share'}
+            </button>
+            <button className="cb-btn cb-btn-ghost" onClick={save}>
+              {saved ? '✓ Saved' : '☆ Save'}
             </button>
             <button className="cb-btn cb-btn-ghost" onClick={onReset}>
               Reset
