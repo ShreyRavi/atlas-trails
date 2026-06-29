@@ -99,6 +99,11 @@ body,
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
+.cb-empty {
+  padding: 12px 14px;
+  font-size: 14px;
+  opacity: 0.55;
+}
 .cb-result {
   display: flex;
   align-items: center;

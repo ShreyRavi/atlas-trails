@@ -130,6 +130,9 @@ export default function CommandBar({
             autoFocus
             aria-label="Add a city to your trip"
           />
+          {cities !== null && query.trim() !== '' && results.length === 0 && (
+            <div className="cb-results cb-empty">No cities match “{query.trim()}”</div>
+          )}
           {results.length > 0 && (
             <ul className="cb-results" role="listbox">
               {results.map((city, i) => (
