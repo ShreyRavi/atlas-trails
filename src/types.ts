@@ -17,6 +17,10 @@ export interface Arc {
   endLng: number
 }
 
+/** An arc tagged for rendering: `_draw` marks the single arc currently
+ *  animating during playback (all others render solid). */
+export type PlayArc = Arc & { _draw: boolean }
+
 export function isValidStop(x: unknown): x is Stop {
   if (!x || typeof x !== 'object') return false
   const s = x as Record<string, unknown>
