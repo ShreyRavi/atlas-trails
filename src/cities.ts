@@ -60,3 +60,36 @@ export function searchCities(all: City[], query: string, limit = 6): City[] {
 export function cityToStop(city: City): Stop {
   return { name: city.n, country: city.c, lat: city.lat, lng: city.lng }
 }
+
+interface NominatimResult {
+  name?: string
+  display_name?: string
+  lat?: string
+  lon?: string
+  address?: { country_code?: string }
+}
+
+/** Worldwide geocode via OpenStreetMap Nominatim, for places not in the bundled
+ *  list. Manual trigger only (rate-limited service). Returns [] on failure. */
+export async function geocodeWorldwide(query: string): Promise<City[]> {
+  const q = query.trim()
+  if (q.length < 3) return []
+  const url =
+    'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&q=' +
+    encodeURIComponent(q)
+  try {
+    const r = await fetch(url, { headers: { Accept: 'application/json' } })
+    if (!r.ok) return []
+    const data: NominatimResult[] = await r.json()
+    return data
+      .map((d) => ({
+        n: d.name || (d.display_name ?? '').split(',')[0].trim(),
+        c: (d.address?.country_code ?? '').toUpperCase(),
+        lat: Number(d.lat),
+        lng: Number(d.lon),
+      }))
+      .filter((c) => c.n && Number.isFinite(c.lat) && Number.isFinite(c.lng))
+  } catch {
+    return []
+  }
+}

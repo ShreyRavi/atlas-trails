@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { loadCities, searchCities, cityToStop, type City } from './cities'
+import { loadCities, searchCities, geocodeWorldwide, cityToStop, type City } from './cities'
 import { tripStats, type Stop } from './types'
 import type { PlayMode } from './usePlayback'
 
@@ -21,8 +21,10 @@ interface Props {
   onTitleChange: (title: string) => void
   onAdd: (stop: Stop) => void
   onRemove: (index: number) => void
+  onMove: (index: number, dir: -1 | 1) => void
   onReset: () => void
   onPlay: () => void
+  onSave: () => void
   mode: PlayMode
   readOnly: boolean
   getShareUrl: () => string
@@ -35,8 +37,10 @@ export default function CommandBar({
   onTitleChange,
   onAdd,
   onRemove,
+  onMove,
   onReset,
   onPlay,
+  onSave,
   mode,
   readOnly,
   getShareUrl,
@@ -47,7 +51,16 @@ export default function CommandBar({
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
   const [copied, setCopied] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [wwResults, setWwResults] = useState<City[] | null>(null)
+  const [wwLoading, setWwLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  function save() {
+    onSave()
+    setSaved(true)
+    setTimeout(() => setSaved(false), 1800)
+  }
 
   useEffect(() => {
     if (readOnly) return
@@ -58,9 +71,22 @@ export default function CommandBar({
 
   const results = !readOnly && cities ? searchCities(cities, query) : []
 
+  const queryRef = useRef(query)
   useEffect(() => {
+    queryRef.current = query
     setActive(0)
+    setWwResults(null) // reset worldwide search when the query changes
+    setWwLoading(false)
   }, [query])
+
+  async function searchWorldwide() {
+    const q = query
+    setWwLoading(true)
+    const r = await geocodeWorldwide(q)
+    if (q !== queryRef.current) return // query changed mid-flight: drop stale results
+    setWwResults(r)
+    setWwLoading(false)
+  }
 
   function add(city: City) {
     onAdd(cityToStop(city))
@@ -148,8 +174,41 @@ export default function CommandBar({
             autoFocus
             aria-label="Add a city to your trip"
           />
-          {cities !== null && query.trim() !== '' && results.length === 0 && (
-            <div className="cb-results cb-empty">No cities match “{query.trim()}”</div>
+          {cities !== null && query.trim().length >= 3 && results.length === 0 && (
+            <div className="cb-results">
+              {wwResults === null ? (
+                <div className="cb-empty">
+                  <span>No match in the city list.</span>
+                  <button className="cb-ww-btn" onMouseDown={(e) => e.preventDefault()} onClick={searchWorldwide} disabled={wwLoading}>
+                    {wwLoading ? 'Searching…' : 'Search worldwide'}
+                  </button>
+                </div>
+              ) : wwResults.length === 0 ? (
+                <div className="cb-empty">Nothing found for “{query.trim()}”.</div>
+              ) : (
+                <ul role="listbox">
+                  {wwResults.map((city, i) => (
+                    <li
+                      key={`ww-${city.n}-${city.lat}-${i}`}
+                      role="option"
+                      aria-selected={false}
+                      className="cb-result"
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        add(city)
+                        setWwResults(null)
+                      }}
+                    >
+                      <span className="cb-city">{city.n}</span>
+                      <span className="cb-country">{city.c || '🌍'}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+          {cities !== null && query.trim() !== '' && query.trim().length < 3 && results.length === 0 && (
+            <div className="cb-results cb-empty">Keep typing…</div>
           )}
           {results.length > 0 && (
             <ul className="cb-results" role="listbox">
@@ -190,6 +249,22 @@ export default function CommandBar({
                 <span className="cb-stop-num">{i + 1}</span>
                 <span className="cb-stop-name">{s.name}</span>
                 <button
+                  className="cb-stop-move"
+                  onClick={() => onMove(i, -1)}
+                  disabled={i === 0}
+                  aria-label={`Move ${s.name} earlier`}
+                >
+                  ↑
+                </button>
+                <button
+                  className="cb-stop-move"
+                  onClick={() => onMove(i, 1)}
+                  disabled={i === stops.length - 1}
+                  aria-label={`Move ${s.name} later`}
+                >
+                  ↓
+                </button>
+                <button
                   className="cb-stop-x"
                   onClick={() => onRemove(i)}
                   aria-label={`Remove ${s.name}`}
@@ -206,6 +281,9 @@ export default function CommandBar({
             </button>
             <button className="cb-btn cb-btn-ghost" onClick={share}>
               {copied ? '✓ Copied' : '🔗 Share'}
+            </button>
+            <button className="cb-btn cb-btn-ghost" onClick={save}>
+              {saved ? '✓ Saved' : '☆ Save'}
             </button>
             <button className="cb-btn cb-btn-ghost" onClick={onReset}>
               Reset

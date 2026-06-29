@@ -1,18 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import Globe, { type GlobeMethods } from 'react-globe.gl'
-import { tripArcs, type Arc, type Stop } from './types'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import type { GlobeMethods } from 'react-globe.gl'
+import { tripArcs, type PlayArc, type Stop } from './types'
 import { ErrorBoundary } from './ErrorBoundary'
 import Unsupported from './Unsupported'
 import { hasWebGL } from './webgl'
 import CommandBar from './CommandBar'
 import { loadTrip, saveTrip, clearTrip } from './storage'
-import { usePlayback, STEP_MS } from './usePlayback'
+import { usePlayback } from './usePlayback'
 import { tripFromHash, shareUrl, clearHash } from './share'
+import { listTrips, upsertTrip, deleteTrip, type SavedTrip } from './trips'
+import TripsPanel from './TripsPanel'
 
-type PlayArc = Arc & { _draw: boolean }
-
-const GLOBE_IMG = '/earth-night.jpg'
-const GLOBE_BUMP = '/earth-topology.png'
+const GlobeCanvas = lazy(() => import('./GlobeCanvas'))
 
 function useWindowSize() {
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight })
@@ -43,6 +42,11 @@ function GlobeStage() {
   const [title, setTitle] = useState(initialTrip.title ?? '')
   const [stops, setStops] = useState<Stop[]>(initialTrip.stops)
   const arcs = useMemo(() => tripArcs(stops), [stops])
+
+  // Trip library (explicit named saves, separate from the autosaved working trip).
+  const [library, setLibrary] = useState<SavedTrip[]>(() => (sharedTrip ? [] : listTrips()))
+  const [libOpen, setLibOpen] = useState(false)
+  const [currentId, setCurrentId] = useState<string | null>(null)
   const { mode, step, play } = usePlayback(globeRef, stops, arcs)
 
   // While playing, reveal arcs 0..step and mark the newest as drawing so only
@@ -53,14 +57,6 @@ function GlobeStage() {
     }
     return arcs.map((a) => ({ ...a, _draw: false }))
   }, [arcs, mode, step])
-
-  useEffect(() => {
-    const g = globeRef.current
-    if (!g) return
-    g.controls().autoRotate = true
-    g.controls().autoRotateSpeed = 0.35
-    g.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 0)
-  }, [])
 
   // Persist the trip on every change — but never overwrite the user's own
   // saved trip while viewing someone else's shared link.
@@ -89,11 +85,47 @@ function GlobeStage() {
     setStops((prev) => prev.filter((_, i) => i !== index))
   }
 
+  function moveStop(index: number, dir: -1 | 1) {
+    setStops((prev) => {
+      const j = index + dir
+      if (j < 0 || j >= prev.length) return prev
+      const next = [...prev]
+      ;[next[index], next[j]] = [next[j], next[index]]
+      return next
+    })
+  }
+
   function reset() {
     setStops([])
     setTitle('')
+    setCurrentId(null)
     clearTrip()
     globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
+  }
+
+  // Save the current trip into the library (updates in place if already saved).
+  function saveToLibrary() {
+    if (stops.length === 0) return
+    const id = currentId ?? crypto.randomUUID()
+    upsertTrip({ title: title.trim() || undefined, stops }, id, Date.now())
+    setCurrentId(id)
+    setLibrary(listTrips())
+  }
+
+  function loadFromLibrary(t: SavedTrip) {
+    clearHash()
+    setReadOnly(false)
+    setTitle(t.title)
+    setStops(t.stops)
+    setCurrentId(t.id)
+    setLibOpen(false)
+    globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
+  }
+
+  function removeFromLibrary(id: string) {
+    deleteTrip(id)
+    setLibrary(listTrips())
+    if (currentId === id) setCurrentId(null)
   }
 
   // From a shared link: leave the viewer for the builder. Restore the
@@ -105,49 +137,43 @@ function GlobeStage() {
     setReadOnly(false)
     setTitle(own.title ?? '')
     setStops(own.stops)
+    setCurrentId(null)
+    setLibrary(listTrips())
     globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
   }
 
   return (
     <div className="globe-stage">
-      <Globe
-        ref={globeRef}
-        width={w}
-        height={h}
-        onGlobeReady={() => setGlobeReady(true)}
-        globeImageUrl={GLOBE_IMG}
-        bumpImageUrl={GLOBE_BUMP}
-        backgroundColor="#060912"
-        atmosphereColor="#3a8bff"
-        atmosphereAltitude={0.18}
-        arcsData={visibleArcs}
-        arcStartLat="startLat"
-        arcStartLng="startLng"
-        arcEndLat="endLat"
-        arcEndLng="endLng"
-        arcColor={() => ['rgba(56,232,255,0.2)', 'rgba(56,232,255,0.95)']}
-        arcStroke={0.55}
-        arcDashLength={1}
-        arcDashGap={(d: object) => ((d as PlayArc)._draw ? 1 : 0)}
-        arcDashInitialGap={(d: object) => ((d as PlayArc)._draw ? 1 : 0)}
-        arcDashAnimateTime={(d: object) => ((d as PlayArc)._draw ? STEP_MS : 0)}
-        arcAltitudeAutoScale={0.4}
-        pointsData={stops}
-        pointLat="lat"
-        pointLng="lng"
-        pointColor={() => '#38e8ff'}
-        pointAltitude={0.01}
-        pointRadius={0.35}
-        pointLabel={(d: object) => (d as Stop).name}
-      />
+      <Suspense fallback={null}>
+        <GlobeCanvas
+          globeRef={globeRef}
+          width={w}
+          height={h}
+          arcs={visibleArcs}
+          stops={stops}
+          onReady={() => setGlobeReady(true)}
+        />
+      </Suspense>
+      {!readOnly && (
+        <TripsPanel
+          open={libOpen}
+          trips={library}
+          currentId={currentId}
+          onToggle={() => setLibOpen((o) => !o)}
+          onLoad={loadFromLibrary}
+          onDelete={removeFromLibrary}
+        />
+      )}
       <CommandBar
         stops={stops}
         title={title}
         onTitleChange={setTitle}
         onAdd={addStop}
         onRemove={removeStop}
+        onMove={moveStop}
         onReset={reset}
         onPlay={play}
+        onSave={saveToLibrary}
         mode={mode}
         readOnly={readOnly}
         getShareUrl={() => shareUrl({ title: title.trim() || undefined, stops })}
