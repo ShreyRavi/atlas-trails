@@ -66,13 +66,16 @@ function GlobeStage() {
     if (!readOnly) saveTrip(stops)
   }, [stops, readOnly])
 
-  // Auto-play a shared trip once the globe is ready.
+  // Auto-play a shared trip exactly once, after the globe reports ready (so the
+  // animation never fires before the scene exists on slow connections).
+  const [globeReady, setGlobeReady] = useState(false)
+  const autoPlayed = useRef(false)
   useEffect(() => {
-    if (!readOnly) return
-    const t = setTimeout(() => play(), 700)
-    return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    if (readOnly && globeReady && !autoPlayed.current) {
+      autoPlayed.current = true
+      play()
+    }
+  }, [readOnly, globeReady, play])
 
   function addStop(stop: Stop) {
     setStops((prev) => [...prev, stop])
@@ -106,6 +109,7 @@ function GlobeStage() {
         ref={globeRef}
         width={w}
         height={h}
+        onGlobeReady={() => setGlobeReady(true)}
         globeImageUrl={GLOBE_IMG}
         bumpImageUrl={GLOBE_BUMP}
         backgroundColor="#060912"
