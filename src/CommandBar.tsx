@@ -1,10 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
 import { loadCities, searchCities, cityToStop, type City } from './cities'
-import type { Stop } from './types'
+import { tripStats, type Stop } from './types'
 import type { PlayMode } from './usePlayback'
+
+function StatsLine({ stops }: { stops: Stop[] }) {
+  if (stops.length < 2) return null
+  const s = tripStats(stops)
+  const km = s.km.toLocaleString()
+  return (
+    <div className="cb-stats">
+      {s.stops} stops · {s.countries} {s.countries === 1 ? 'country' : 'countries'} ·{' '}
+      {km} km
+    </div>
+  )
+}
 
 interface Props {
   stops: Stop[]
+  title: string
+  onTitleChange: (title: string) => void
   onAdd: (stop: Stop) => void
   onRemove: (index: number) => void
   onReset: () => void
@@ -17,6 +31,8 @@ interface Props {
 
 export default function CommandBar({
   stops,
+  title,
+  onTitleChange,
   onAdd,
   onRemove,
   onReset,
@@ -84,6 +100,8 @@ export default function CommandBar({
   if (readOnly) {
     return (
       <div className="commandbar">
+        {title && <h1 className="cb-title-view">{title}</h1>}
+        <StatsLine stops={stops} />
         {stops.length > 0 && (
           <ol className="cb-stops">
             {stops.map((s, i) => (
@@ -158,6 +176,14 @@ export default function CommandBar({
 
       {stops.length > 0 && !playing && (
         <>
+          <input
+            className="cb-title-input"
+            value={title}
+            maxLength={80}
+            onChange={(e) => onTitleChange(e.target.value)}
+            placeholder="Name your trip…"
+            aria-label="Trip title"
+          />
           <ol className="cb-stops">
             {stops.map((s, i) => (
               <li key={`${s.name}-${i}`} className="cb-stop">
@@ -173,6 +199,7 @@ export default function CommandBar({
               </li>
             ))}
           </ol>
+          {mode === 'done' && <StatsLine stops={stops} />}
           <div className="cb-actions">
             <button className="cb-btn cb-btn-primary" onClick={onPlay}>
               {playLabel}
