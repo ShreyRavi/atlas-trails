@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { loadCities, searchCities, cityToStop, type City } from './cities'
+import { loadCities, searchCities, geocodeWorldwide, cityToStop, type City } from './cities'
 import { tripStats, type Stop } from './types'
 import type { PlayMode } from './usePlayback'
 
@@ -52,6 +52,8 @@ export default function CommandBar({
   const [active, setActive] = useState(0)
   const [copied, setCopied] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [wwResults, setWwResults] = useState<City[] | null>(null)
+  const [wwLoading, setWwLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   function save() {
@@ -71,7 +73,15 @@ export default function CommandBar({
 
   useEffect(() => {
     setActive(0)
+    setWwResults(null) // reset worldwide search when the query changes
   }, [query])
+
+  async function searchWorldwide() {
+    setWwLoading(true)
+    const r = await geocodeWorldwide(query)
+    setWwResults(r)
+    setWwLoading(false)
+  }
 
   function add(city: City) {
     onAdd(cityToStop(city))
@@ -159,8 +169,41 @@ export default function CommandBar({
             autoFocus
             aria-label="Add a city to your trip"
           />
-          {cities !== null && query.trim() !== '' && results.length === 0 && (
-            <div className="cb-results cb-empty">No cities match “{query.trim()}”</div>
+          {cities !== null && query.trim().length >= 3 && results.length === 0 && (
+            <div className="cb-results">
+              {wwResults === null ? (
+                <div className="cb-empty">
+                  <span>No match in the city list.</span>
+                  <button className="cb-ww-btn" onMouseDown={(e) => e.preventDefault()} onClick={searchWorldwide} disabled={wwLoading}>
+                    {wwLoading ? 'Searching…' : 'Search worldwide'}
+                  </button>
+                </div>
+              ) : wwResults.length === 0 ? (
+                <div className="cb-empty">Nothing found for “{query.trim()}”.</div>
+              ) : (
+                <ul role="listbox">
+                  {wwResults.map((city, i) => (
+                    <li
+                      key={`ww-${city.n}-${city.lat}-${i}`}
+                      role="option"
+                      aria-selected={false}
+                      className="cb-result"
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        add(city)
+                        setWwResults(null)
+                      }}
+                    >
+                      <span className="cb-city">{city.n}</span>
+                      <span className="cb-country">{city.c || '🌍'}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+          {cities !== null && query.trim() !== '' && query.trim().length < 3 && results.length === 0 && (
+            <div className="cb-results cb-empty">Keep typing…</div>
           )}
           {results.length > 0 && (
             <ul className="cb-results" role="listbox">
