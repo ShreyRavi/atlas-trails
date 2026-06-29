@@ -21,6 +21,7 @@ interface Props {
   onTitleChange: (title: string) => void
   onAdd: (stop: Stop) => void
   onRemove: (index: number) => void
+  onMove: (index: number, dir: -1 | 1) => void
   onReset: () => void
   onPlay: () => void
   mode: PlayMode
@@ -35,6 +36,7 @@ export default function CommandBar({
   onTitleChange,
   onAdd,
   onRemove,
+  onMove,
   onReset,
   onPlay,
   mode,
@@ -189,6 +191,22 @@ export default function CommandBar({
               <li key={`${s.name}-${i}`} className="cb-stop">
                 <span className="cb-stop-num">{i + 1}</span>
                 <span className="cb-stop-name">{s.name}</span>
+                <button
+                  className="cb-stop-move"
+                  onClick={() => onMove(i, -1)}
+                  disabled={i === 0}
+                  aria-label={`Move ${s.name} earlier`}
+                >
+                  ↑
+                </button>
+                <button
+                  className="cb-stop-move"
+                  onClick={() => onMove(i, 1)}
+                  disabled={i === stops.length - 1}
+                  aria-label={`Move ${s.name} later`}
+                >
+                  ↓
+                </button>
                 <button
                   className="cb-stop-x"
                   onClick={() => onRemove(i)}

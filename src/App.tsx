@@ -78,6 +78,16 @@ function GlobeStage() {
     setStops((prev) => prev.filter((_, i) => i !== index))
   }
 
+  function moveStop(index: number, dir: -1 | 1) {
+    setStops((prev) => {
+      const j = index + dir
+      if (j < 0 || j >= prev.length) return prev
+      const next = [...prev]
+      ;[next[index], next[j]] = [next[j], next[index]]
+      return next
+    })
+  }
+
   function reset() {
     setStops([])
     setTitle('')
@@ -115,6 +125,7 @@ function GlobeStage() {
         onTitleChange={setTitle}
         onAdd={addStop}
         onRemove={removeStop}
+        onMove={moveStop}
         onReset={reset}
         onPlay={play}
         mode={mode}
