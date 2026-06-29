@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.0 — 2026-06-28
+
+- **Multi-trip library**: save named trips, switch between them, delete. Stored
+  locally (`atlas.library.v1`), separate from the autosaved working trip.
+- **Reorder stops** with up/down controls.
+- **Worldwide city fallback**: when a place isn't in the bundled 10k list, an
+  on-demand OpenStreetMap Nominatim lookup fills the gap (fails gracefully).
+- **Performance**: the globe (three.js) is code-split and lazy-loaded — initial
+  JS bundle dropped from ~593KB to ~66KB gzipped, so the UI paints immediately.
+
 ## 0.2.0 — 2026-06-28
 
 - **Trip titles**: name a trip; the title persists, rides along in the share
