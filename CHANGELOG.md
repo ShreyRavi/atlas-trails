@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 — 2026-06-28
+
+- **Trip titles**: name a trip; the title persists, rides along in the share
+  link, and headlines the read-only viewer. Backward-compatible with v0.1
+  saved trips (legacy bare-array localStorage still loads).
+- **Trip stats**: stop count, unique countries, and total great-circle
+  distance (km) shown in the viewer and after a play-through.
+- Polish: absolute OG image URL (reliable social unfurl), "no cities match"
+  autocomplete hint, shared-link autoplay now waits for the globe to be ready
+  instead of a fixed timer.
+
 ## 0.1.0 — 2026-06-28
 
 First release. Backendless travel-timelapse app.

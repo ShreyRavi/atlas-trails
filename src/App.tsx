@@ -38,8 +38,10 @@ function GlobeStage() {
   const globeRef = useRef<GlobeMethods | undefined>(undefined)
   const { w, h } = useWindowSize()
   const sharedTrip = useMemo(tripFromHash, [])
+  const initialTrip = useMemo(() => sharedTrip ?? loadTrip(), [sharedTrip])
   const [readOnly, setReadOnly] = useState(sharedTrip !== null)
-  const [stops, setStops] = useState<Stop[]>(() => sharedTrip ?? loadTrip())
+  const [title, setTitle] = useState(initialTrip.title ?? '')
+  const [stops, setStops] = useState<Stop[]>(initialTrip.stops)
   const arcs = useMemo(() => tripArcs(stops), [stops])
   const { mode, step, play } = usePlayback(globeRef, stops, arcs)
 
@@ -63,8 +65,8 @@ function GlobeStage() {
   // Persist the trip on every change — but never overwrite the user's own
   // saved trip while viewing someone else's shared link.
   useEffect(() => {
-    if (!readOnly) saveTrip(stops)
-  }, [stops, readOnly])
+    if (!readOnly) saveTrip({ title: title.trim() || undefined, stops })
+  }, [stops, title, readOnly])
 
   // Auto-play a shared trip exactly once, after the globe reports ready (so the
   // animation never fires before the scene exists on slow connections).
@@ -89,6 +91,7 @@ function GlobeStage() {
 
   function reset() {
     setStops([])
+    setTitle('')
     clearTrip()
     globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
   }
@@ -98,8 +101,10 @@ function GlobeStage() {
   // the shared trip was never persisted.
   function createOwn() {
     clearHash()
+    const own = loadTrip()
     setReadOnly(false)
-    setStops(loadTrip())
+    setTitle(own.title ?? '')
+    setStops(own.stops)
     globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
   }
 
@@ -137,13 +142,15 @@ function GlobeStage() {
       />
       <CommandBar
         stops={stops}
+        title={title}
+        onTitleChange={setTitle}
         onAdd={addStop}
         onRemove={removeStop}
         onReset={reset}
         onPlay={play}
         mode={mode}
         readOnly={readOnly}
-        getShareUrl={() => shareUrl(stops)}
+        getShareUrl={() => shareUrl({ title: title.trim() || undefined, stops })}
         onCreateOwn={createOwn}
       />
     </div>
