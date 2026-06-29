@@ -71,14 +71,19 @@ export default function CommandBar({
 
   const results = !readOnly && cities ? searchCities(cities, query) : []
 
+  const queryRef = useRef(query)
   useEffect(() => {
+    queryRef.current = query
     setActive(0)
     setWwResults(null) // reset worldwide search when the query changes
+    setWwLoading(false)
   }, [query])
 
   async function searchWorldwide() {
+    const q = query
     setWwLoading(true)
-    const r = await geocodeWorldwide(query)
+    const r = await geocodeWorldwide(q)
+    if (q !== queryRef.current) return // query changed mid-flight: drop stale results
     setWwResults(r)
     setWwLoading(false)
   }
