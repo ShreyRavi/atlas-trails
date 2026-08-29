@@ -357,3 +357,155 @@ body,
 .cb-btn-ghost:hover {
   border-color: var(--arc);
 }
+
+/* ---- Trip summary ---- */
+.cb-summary-input {
+  width: 100%;
+  margin-top: -2px;
+  padding: 9px 14px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--fg);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  outline: none;
+  resize: vertical;
+}
+.cb-summary-input::placeholder {
+  color: rgba(232, 237, 245, 0.4);
+}
+.cb-summary-input:focus {
+  border-color: var(--arc);
+}
+.cb-summary-view {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  opacity: 0.85;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8);
+}
+
+/* ---- Per-stop notes and dates ---- */
+.cb-stop-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.cb-stop-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+/* A stop with a note or an open editor stops being a pill and becomes a card. */
+.cb-stop-expanded {
+  display: flex;
+  align-items: flex-start;
+  border-radius: 14px;
+  padding: 8px 10px;
+  flex-basis: 100%;
+}
+.cb-stop-expanded .cb-stop-num {
+  margin-top: 2px;
+}
+.cb-stop-date {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--arc);
+  opacity: 0.85;
+  white-space: nowrap;
+}
+.cb-stop-note {
+  font-size: 12px;
+  line-height: 1.45;
+  opacity: 0.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.cb-stop-note-btn {
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.45;
+  padding: 0 2px;
+}
+.cb-stop-note-btn:hover {
+  opacity: 1;
+}
+.cb-stop-note-btn.cb-has-note {
+  color: var(--arc);
+  opacity: 0.95;
+}
+.cb-stop-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 2px;
+}
+.cb-note-input {
+  width: 100%;
+  min-width: 220px;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  border-radius: 9px;
+  outline: none;
+  resize: vertical;
+}
+.cb-note-input:focus {
+  border-color: var(--arc);
+}
+.cb-date-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cb-date-input {
+  font: inherit;
+  font-size: 11px;
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 4px 6px;
+  outline: none;
+  color-scheme: dark;
+}
+.cb-date-input:focus {
+  border-color: var(--arc);
+}
+.cb-date-input:disabled {
+  opacity: 0.4;
+}
+.cb-date-sep {
+  font-size: 11px;
+  opacity: 0.5;
+}
+.cb-note-count {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  opacity: 0.45;
+  font-variant-numeric: tabular-nums;
+}
+
+/* On narrow screens the centered command bar's left edge lands underneath the
+   fixed Trips button, which sits at the same top offset. Only the builder
+   renders beneath it — the shared-link viewer has no Trips button. */
+@media (max-width: 560px) {
+  .commandbar-builder {
+    top: calc(max(20px, env(safe-area-inset-top)) + 46px);
+  }
+}

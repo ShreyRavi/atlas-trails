@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from 'react'
+import { useEffect, useMemo, type RefObject } from 'react'
 import Globe, { type GlobeMethods } from 'react-globe.gl'
 import type { PlayArc, Stop } from './types'
 import { STEP_MS } from './usePlayback'
@@ -18,6 +18,9 @@ interface Props {
 /** The three.js globe. Lazy-loaded so the command bar paints before this heavy
  *  chunk arrives. */
 export default function GlobeCanvas({ globeRef, width, height, arcs, stops, onReady }: Props) {
+  // react-globe.gl mutates its points data, so hand it copies and keep the
+  // app's own stop objects clean.
+  const pointsData = useMemo(() => stops.map((s) => ({ ...s })), [stops])
   useEffect(() => {
     const g = globeRef.current
     if (!g) return
@@ -49,7 +52,7 @@ export default function GlobeCanvas({ globeRef, width, height, arcs, stops, onRe
       arcDashInitialGap={(d: object) => ((d as PlayArc)._draw ? 1 : 0)}
       arcDashAnimateTime={(d: object) => ((d as PlayArc)._draw ? STEP_MS : 0)}
       arcAltitudeAutoScale={0.4}
-      pointsData={stops}
+      pointsData={pointsData}
       pointLat="lat"
       pointLng="lng"
       pointColor={() => '#38e8ff'}

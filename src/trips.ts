@@ -1,10 +1,11 @@
-import { parseStops, type Stop, type Trip } from './types'
+import { cleanText, parseStops, serializeStop, SUMMARY_MAX, type Stop, type Trip } from './types'
 
 const KEY = 'atlas.library.v1'
 
 export interface SavedTrip {
   id: string
   title: string
+  summary?: string
   stops: Stop[]
   savedAt: number
 }
@@ -23,6 +24,7 @@ function read(): SavedTrip[] {
       .map((t) => ({
         id: t.id,
         title: typeof t.title === 'string' ? t.title : '',
+        summary: cleanText(t.summary, SUMMARY_MAX),
         stops: parseStops(t.stops),
         savedAt: typeof t.savedAt === 'number' && Number.isFinite(t.savedAt) ? t.savedAt : 0,
       }))
@@ -52,7 +54,8 @@ export function upsertTrip(trip: Trip & { id?: string }, id: string, savedAt: nu
   const entry: SavedTrip = {
     id: trip.id ?? id,
     title: trip.title ?? '',
-    stops: trip.stops,
+    summary: cleanText(trip.summary, SUMMARY_MAX),
+    stops: trip.stops.map(serializeStop),
     savedAt,
   }
   const existing = trips.findIndex((t) => t.id === entry.id)

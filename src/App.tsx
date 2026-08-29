@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import type { GlobeMethods } from 'react-globe.gl'
-import { tripArcs, type PlayArc, type Stop } from './types'
+import { tripArcs, type PlayArc, type Stop, type Trip } from './types'
 import { ErrorBoundary } from './ErrorBoundary'
 import Unsupported from './Unsupported'
 import { hasWebGL } from './webgl'
@@ -40,6 +40,7 @@ function GlobeStage() {
   const initialTrip = useMemo(() => sharedTrip ?? loadTrip(), [sharedTrip])
   const [readOnly, setReadOnly] = useState(sharedTrip !== null)
   const [title, setTitle] = useState(initialTrip.title ?? '')
+  const [summary, setSummary] = useState(initialTrip.summary ?? '')
   const [stops, setStops] = useState<Stop[]>(initialTrip.stops)
   const arcs = useMemo(() => tripArcs(stops), [stops])
 
@@ -48,6 +49,7 @@ function GlobeStage() {
   const [libOpen, setLibOpen] = useState(false)
   const [currentId, setCurrentId] = useState<string | null>(null)
   const { mode, step, play } = usePlayback(globeRef, stops, arcs)
+  const autoPlayed = useRef(false)
 
   // While playing, reveal arcs 0..step and mark the newest as drawing so only
   // it animates; otherwise show every arc as a solid line.
@@ -61,19 +63,52 @@ function GlobeStage() {
   // Persist the trip on every change — but never overwrite the user's own
   // saved trip while viewing someone else's shared link.
   useEffect(() => {
-    if (!readOnly) saveTrip({ title: title.trim() || undefined, stops })
-  }, [stops, title, readOnly])
+    if (!readOnly) {
+      saveTrip({ title: title.trim() || undefined, summary: summary.trim() || undefined, stops })
+    }
+  }, [stops, title, summary, readOnly])
+
+  // Pasting a share link while the app is already open is a same-document
+  // navigation, so nothing reloads. Pick the new trip up by hand. `clearHash`
+  // uses replaceState, which fires no event, so leaving the viewer is unaffected.
+  useEffect(() => {
+    function onHashChange() {
+      const shared = tripFromHash()
+      if (!shared) return
+      setTitle(shared.title ?? '')
+      setSummary(shared.summary ?? '')
+      setStops(shared.stops)
+      setCurrentId(null)
+      setReadOnly(true)
+      autoPlayed.current = false
+    }
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
 
   // Auto-play a shared trip exactly once, after the globe reports ready (so the
   // animation never fires before the scene exists on slow connections).
   const [globeReady, setGlobeReady] = useState(false)
-  const autoPlayed = useRef(false)
   useEffect(() => {
     if (readOnly && globeReady && !autoPlayed.current) {
       autoPlayed.current = true
       play()
     }
   }, [readOnly, globeReady, play])
+
+  /** The trip as it stands, trimmed — the one shape saved, shared and stored. */
+  function currentTrip(): Trip {
+    return {
+      title: title.trim() || undefined,
+      summary: summary.trim() || undefined,
+      stops,
+    }
+  }
+
+  /** Patch one stop's note or dates in place. */
+  function editStop(index: number, patch: Partial<Stop>) {
+    setStops((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)))
+  }
 
   function addStop(stop: Stop) {
     setStops((prev) => [...prev, stop])
@@ -98,6 +133,7 @@ function GlobeStage() {
   function reset() {
     setStops([])
     setTitle('')
+    setSummary('')
     setCurrentId(null)
     clearTrip()
     globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
@@ -107,7 +143,7 @@ function GlobeStage() {
   function saveToLibrary() {
     if (stops.length === 0) return
     const id = currentId ?? crypto.randomUUID()
-    upsertTrip({ title: title.trim() || undefined, stops }, id, Date.now())
+    upsertTrip(currentTrip(), id, Date.now())
     setCurrentId(id)
     setLibrary(listTrips())
   }
@@ -116,6 +152,7 @@ function GlobeStage() {
     clearHash()
     setReadOnly(false)
     setTitle(t.title)
+    setSummary(t.summary ?? '')
     setStops(t.stops)
     setCurrentId(t.id)
     setLibOpen(false)
@@ -136,6 +173,7 @@ function GlobeStage() {
     const own = loadTrip()
     setReadOnly(false)
     setTitle(own.title ?? '')
+    setSummary(own.summary ?? '')
     setStops(own.stops)
     setCurrentId(null)
     setLibrary(listTrips())
@@ -167,7 +205,10 @@ function GlobeStage() {
       <CommandBar
         stops={stops}
         title={title}
+        summary={summary}
         onTitleChange={setTitle}
+        onSummaryChange={setSummary}
+        onEditStop={editStop}
         onAdd={addStop}
         onRemove={removeStop}
         onMove={moveStop}
@@ -176,7 +217,7 @@ function GlobeStage() {
         onSave={saveToLibrary}
         mode={mode}
         readOnly={readOnly}
-        getShareUrl={() => shareUrl({ title: title.trim() || undefined, stops })}
+        getShareUrl={() => shareUrl(currentTrip())}
         onCreateOwn={createOwn}
       />
     </div>
