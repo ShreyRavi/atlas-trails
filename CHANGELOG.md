@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.1.0 — 2026-08-29
+
+- **Notes and dates per stop**: annotate each stop with a note (140 chars) and
+  an arrival/departure date range. Dated trips report their day span alongside
+  stops, countries and distance.
+- **Trip summary**: a one-paragraph summary (200 chars) under the trip title,
+  shown in the read-only viewer.
+- Notes, dates and the summary ride along in share links, capped so link length
+  stays bounded by stop count. Pre-existing links still open.
+- **Search rewrite**: tiered ranking (exact -> alias -> prefix -> word -> substring
+  -> fuzzy) replaces prefix-only matching. `NYC`, `Bombay`, `Saigon`, `york`,
+  `Barcelna` and `Paris, France` now resolve; results dedupe, so `Paris` no
+  longer returns five arrondissements.
+- **Worldwide fallback is automatic**: a place missing from the bundled list
+  triggers a debounced Nominatim lookup instead of requiring a button press.
+- Fix: `react-globe.gl` attaches a three.js object to the stop data it is given,
+  which was being serialized into `localStorage` alongside the trip. Stops are
+  now sanitized on write and the globe gets copies.
+- Fix: pasting a share link into an already-open tab is a same-document hash
+  change, so the trip never loaded. Handled via `hashchange`.
+- Fix: on screens under 560px the fixed Trips button and the centered command
+  bar shared a top offset and overlapped once a trip had stops.
+- Perf: memoized `Intl.DisplayNames` country lookups. A country-qualified query
+  was resolving a display name per city per keystroke — 8.5 ms down to 0.6 ms.
+- Docs: README rebuilt as a showcase (demo GIF, screenshots, architecture and
+  search-design notes); added MIT LICENSE. Corrected the deploy section, which
+  claimed git pushes deploy — this project is CLI-deployed.
+
 ## 1.0.0 — 2026-06-28
 
 - **Multi-trip library**: save named trips, switch between them, delete. Stored

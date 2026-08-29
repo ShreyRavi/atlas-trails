@@ -1,34 +1,67 @@
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string'
-import { parseStops, type Trip } from './types'
+import { cleanText, parseStops, NOTE_MAX, SUMMARY_MAX, type Trip } from './types'
 
 const HASH_PREFIX = '#t='
-const SCHEMA = 1
+const SCHEMA = 2
 
-/** Serialize a trip into a compact, URL-safe payload. */
+/** Wire shape: short keys, since every byte lands in the URL. */
+interface WireStop {
+  name: string
+  country: string
+  lat: number
+  lng: number
+  nt?: string
+  d1?: string
+  d2?: string
+}
+
+/** Serialize a trip into a compact, URL-safe payload. Notes and the summary are
+ *  capped before they are written, so a link's length stays bounded by the stop
+ *  count rather than by how much someone typed. */
 export function encodeTrip(trip: Trip): string {
   // Round coords to 4dp (~11m) to keep the link short.
-  const compact = trip.stops.map((s) => ({
-    name: s.name,
-    country: s.country,
-    lat: +s.lat.toFixed(4),
-    lng: +s.lng.toFixed(4),
-  }))
-  const payload: { v: number; s: typeof compact; t?: string } = { v: SCHEMA, s: compact }
+  const compact: WireStop[] = trip.stops.map((s) => {
+    const stop: WireStop = {
+      name: s.name,
+      country: s.country,
+      lat: +s.lat.toFixed(4),
+      lng: +s.lng.toFixed(4),
+    }
+    const note = cleanText(s.note, NOTE_MAX)
+    if (note) stop.nt = note
+    if (s.start) stop.d1 = s.start
+    if (s.start && s.end) stop.d2 = s.end
+    return stop
+  })
+  const payload: { v: number; s: WireStop[]; t?: string; sm?: string } = { v: SCHEMA, s: compact }
   if (trip.title) payload.t = trip.title
+  const summary = cleanText(trip.summary, SUMMARY_MAX)
+  if (summary) payload.sm = summary
   return compressToEncodedURIComponent(JSON.stringify(payload))
 }
 
 /** Decode a payload back into a trip. Returns null on any failure (tampered,
- *  wrong schema, empty) so callers fall back to the builder. */
+ *  wrong schema, empty) so callers fall back to the builder. v1 links — which
+ *  predate notes and dates — decode fine; they simply carry neither. */
 export function decodeTrip(payload: string): Trip | null {
   try {
     const json = decompressFromEncodedURIComponent(payload)
     if (!json) return null
     const data = JSON.parse(json)
-    const stops = parseStops(data?.s)
+    const wire: unknown[] = Array.isArray(data?.s) ? data.s : []
+    const stops = parseStops(
+      wire.map((w) => {
+        const s = w as Record<string, unknown>
+        return { ...s, note: s.nt, start: s.d1, end: s.d2 }
+      }),
+    )
     if (stops.length === 0) return null
-    const title = typeof data?.t === 'string' ? data.t.trim().slice(0, 80) || undefined : undefined
-    return { title, stops }
+    const trip: Trip = { stops }
+    const title = cleanText(data?.t, 80)
+    if (title) trip.title = title
+    const summary = cleanText(data?.sm, SUMMARY_MAX)
+    if (summary) trip.summary = summary
+    return trip
   } catch {
     return null
   }
