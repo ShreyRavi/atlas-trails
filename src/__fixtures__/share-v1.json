@@ -1,0 +1,53 @@
+{
+  "bare": {
+    "payload": "N4IgbiBcCMA0IGcoG1QDsCGBbAplEAChgE4CWS8AxgPYCuaALsQJ74BiASiPADYYNQALAA4AdMICsAZkG80AcygAmUTOHCAvrHTY8kEAC0AP2UoALbiBr0mrfQGEAEpb4DIggOyqAbN49zFSDEJCS0dXHwOHGYAawArDDBSGMtrRhZ8AEkAZRd+KG9BUWgpEICoAFolaHEATglBDQBdDSA",
+    "decoded": {
+      "stops": [
+        {
+          "name": "Paris",
+          "country": "FR",
+          "lat": 48.8534,
+          "lng": 2.3488
+        },
+        {
+          "name": "Zürich",
+          "country": "CH",
+          "lat": 47.3667,
+          "lng": 8.55
+        },
+        {
+          "name": "Reykjavik",
+          "country": "IS",
+          "lat": 64.1355,
+          "lng": -21.8954
+        }
+      ]
+    }
+  },
+  "titled": {
+    "payload": "N4IgbiBcCMA0IGcoG1QDsCGBbAplEAChgE4CWS8AxgPYCuaALsQJ74BiASiPADYYNQALAA4AdMICsAZkG80AcygAmUTOHCAvrHTY8kEAC0AP2UoALbiBr0mrfQGEAEpb4DIggOyqAbN49zFSDEJCS0dXHwOHGYAawArDDBSGMtrRhZ8AEkAZRd+KG9BUWgpEICoAFolaHEATglBDQBdeDcQAFFaYmoABxwAAh5qXpANIA",
+    "decoded": {
+      "stops": [
+        {
+          "name": "Paris",
+          "country": "FR",
+          "lat": 48.8534,
+          "lng": 2.3488
+        },
+        {
+          "name": "Zürich",
+          "country": "CH",
+          "lat": 47.3667,
+          "lng": 8.55
+        },
+        {
+          "name": "Reykjavik",
+          "country": "IS",
+          "lat": 64.1355,
+          "lng": -21.8954
+        }
+      ],
+      "title": "Europe loop"
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "payload": "N4IgbiBcBMA0IGcoG1QDsCGBbAplEAMgJYIBGA9miPAMbkCuaALgE4Ce+ACgCrUgA2GJlADMADgB0AdgCMANgCc8fmgDmUALQKJMkUpDN83FtgAE0MaaGmAJhgDuaCXxsz80AAzQ5GjyN-QLoGQIJ7evv4eciAAvrDo2HghnOQsTOR8dIysHMm8ykJQACwyOkUKcspqmpJyMjLwhsmpTKZMGAhMRGqm3aYA4hhEGBIAOmgAQjidpgBmJmg0090AFiMubiFhPn6+0fA2waFeO5EKsfEGiVwtGbQMzOxc+QKFkCVlFVXqkBq19XEErh8ABlADH5FMnAw9H4dxAWUeuRAEwASnxBMJftARBIAKxFKR476aIpyCRyER1A6bY7hXYyQKAq7AkLccgAazY8MROXwAClOBi3iI8RSxApiQJqpBdNpFDIpDEALrwLEgFJpeiqDD8UwAMlMIIADkM0LBTAhjSxuqpzPtEFgjPZIfYcDgOQhTORZm0iPxphb2qavRg0DY2iZughnDEgA",
+  "decoded": {
+    "stops": [
+      {
+        "name": "Lisbon",
+        "country": "PT",
+        "lat": 38.7169,
+        "lng": -9.139,
+        "note": "Tram 28 at dawn.",
+        "start": "2026-03-02",
+        "end": "2026-03-06"
+      },
+      {
+        "name": "Porto",
+        "country": "PT",
+        "lat": 41.1496,
+        "lng": -8.611,
+        "note": "Port tasting in Gaia.\nBest francesinha.",
+        "start": "2026-03-06",
+        "end": "2026-03-09"
+      },
+      {
+        "name": "Porto",
+        "country": "PT",
+        "lat": 41.1496,
+        "lng": -8.611
+      },
+      {
+        "name": "São Paulo",
+        "country": "BR",
+        "lat": -23.5475,
+        "lng": -46.6361,
+        "start": "2026-03-12"
+      },
+      {
+        "name": "Tokyo",
+        "country": "JP",
+        "lat": 35.6895,
+        "lng": 139.6917
+      }
+    ],
+    "title": "Portugal & Spain, spring 26",
+    "summary": "Two weeks of tiles, tapas and trains."
+  }
+}

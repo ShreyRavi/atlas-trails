@@ -1,0 +1,23 @@
+{
+  "raw": "[{\"name\":\"Paris\",\"country\":\"FR\",\"lat\":48.8534,\"lng\":2.3488},{\"name\":\"Zürich\",\"country\":\"CH\",\"lat\":47.3667,\"lng\":8.55},{\"name\":\"Reykjavik\",\"country\":\"IS\",\"lat\":64.1355,\"lng\":-21.8954},{\"name\":\"Broken\",\"country\":\"XX\",\"lat\":\"nope\",\"lng\":1}]",
+  "stops": [
+    {
+      "name": "Paris",
+      "country": "FR",
+      "lat": 48.8534,
+      "lng": 2.3488
+    },
+    {
+      "name": "Zürich",
+      "country": "CH",
+      "lat": 47.3667,
+      "lng": 8.55
+    },
+    {
+      "name": "Reykjavik",
+      "country": "IS",
+      "lat": 64.1355,
+      "lng": -21.8954
+    }
+  ]
+}
