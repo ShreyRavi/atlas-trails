@@ -1,7 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { GlobeMethods } from 'react-globe.gl'
 import { tripArcs, withIds, isUnsaved, type PlayArc, type Stop, type Trip } from './types'
-import { ErrorBoundary } from './ErrorBoundary'
+import { CrashScreen, ErrorBoundary, GlobeFallback } from './ErrorBoundary'
+import { VersionTag } from './VersionTag'
 import Unsupported from './Unsupported'
 import { hasWebGL } from './webgl'
 import CommandBar from './CommandBar'
@@ -54,7 +55,7 @@ export default function App() {
   const [webgl] = useState(hasWebGL)
   if (!webgl) return <Unsupported />
   return (
-    <ErrorBoundary fallback={<Unsupported />}>
+    <ErrorBoundary fallback={<CrashScreen />}>
       <GlobeStage />
     </ErrorBoundary>
   )
@@ -78,6 +79,7 @@ function GlobeStage() {
   const [currentId, setCurrentId] = useState<string | null>(initial.currentId)
   const [dialog, setDialog] = useState<Dialog | null>(null)
   const [globeReady, setGlobeReady] = useState(false)
+  const [globeFailed, setGlobeFailed] = useState(false)
   const autoPlayed = useRef(false)
 
   // Keep the pin clear of the stacked card and bar on phones.
@@ -270,19 +272,27 @@ function GlobeStage() {
 
   return (
     <div className="globe-stage">
-      <Suspense fallback={null}>
-        <GlobeCanvas
-          globeRef={globeRef}
-          width={w}
-          height={h}
-          arcs={visibleArcs}
-          stops={stops}
-          onReady={() => setGlobeReady(true)}
-          onUserInteract={() => {
-            if (state.phase === 'flying' || state.phase === 'dwelling') pause('userDrag')
-          }}
-        />
-      </Suspense>
+      <ErrorBoundary
+        fallback={<GlobeFallback />}
+        onError={() => {
+          setGlobeFailed(true)
+          dispatch({ type: 'stop' })
+        }}
+      >
+        <Suspense fallback={null}>
+          <GlobeCanvas
+            globeRef={globeRef}
+            width={w}
+            height={h}
+            arcs={visibleArcs}
+            stops={stops}
+            onReady={() => setGlobeReady(true)}
+            onUserInteract={() => {
+              if (state.phase === 'flying' || state.phase === 'dwelling') pause('userDrag')
+            }}
+          />
+        </Suspense>
+      </ErrorBoundary>
       {!readOnly && !playing && (
         <TripsPanel
           open={libOpen}
@@ -317,7 +327,7 @@ function GlobeStage() {
         onShareFallback={(url) => openDialog({ kind: 'share', url })}
         onCreateOwn={createOwn}
       />
-      {playing && (
+      {playing && !globeFailed && (
         <PlaybackOverlay
           stops={stops}
           state={state}
@@ -331,6 +341,7 @@ function GlobeStage() {
           onHeight={onOverlayHeight}
         />
       )}
+      {!playing && <VersionTag />}
       {dialog?.kind === 'reset' && (
         <Modal
           title="Clear this trip?"

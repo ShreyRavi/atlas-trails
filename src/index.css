@@ -936,3 +936,78 @@ textarea,
 select {
   font-family: inherit;
 }
+
+/* ---- Crash screen, globe fallback, version ---- */
+.crash {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 24px;
+  text-align: center;
+}
+.crash h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+.crash p {
+  margin: 0;
+  max-width: 420px;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+.crash-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.crash-actions .cb-btn {
+  flex: none;
+  min-width: 132px;
+}
+.crash-hint {
+  font-size: 13px;
+}
+.globe-fallback {
+  position: fixed;
+  left: 50%;
+  top: 55%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.globe-fallback p {
+  margin: 0;
+  font-size: 14px;
+}
+.version-tag {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 5;
+  font-size: 12px;
+  color: var(--fg);
+  opacity: 0.6;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+a.version-tag:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+.version-tag.is-inline {
+  position: static;
+  margin-top: 8px;
+}
