@@ -102,7 +102,21 @@ export function serializeStop(s: Stop): Stop {
   return out
 }
 
-function haversineKm(a: Stop, b: Stop): number {
+/** Milliseconds at UTC midnight for an ISO `YYYY-MM-DD` date. Pinned to UTC so
+ *  the visitor's timezone can never shift a stay by a day. The one place
+ *  calendar dates become instants: stats, nights and formatting all use it. */
+export function utcDay(iso: string): number {
+  return Date.parse(`${iso}T00:00:00Z`)
+}
+
+/** Whole days from `a` to `b` (negative when `b` is earlier). */
+export function daysBetween(a: string, b: string): number {
+  return Math.round((utcDay(b) - utcDay(a)) / 86_400_000)
+}
+
+type LatLng = { lat: number; lng: number }
+
+export function haversineKm(a: LatLng, b: LatLng): number {
   const R = 6371
   const toRad = (d: number) => (d * Math.PI) / 180
   const dLat = toRad(b.lat - a.lat)
@@ -130,10 +144,7 @@ export function tripStats(stops: Stop[]): TripStats {
   const countries = new Set(stops.map((s) => s.country)).size
   const stats: TripStats = { stops: stops.length, countries, km: Math.round(km) }
   const dates = stops.flatMap((s) => [s.start, s.end].filter((d): d is string => !!d)).sort()
-  if (dates.length >= 2) {
-    const ms = Date.parse(`${dates[dates.length - 1]}T00:00:00Z`) - Date.parse(`${dates[0]}T00:00:00Z`)
-    stats.days = Math.round(ms / 86_400_000) + 1
-  }
+  if (dates.length >= 2) stats.days = daysBetween(dates[0], dates[dates.length - 1]) + 1
   return stats
 }
 
