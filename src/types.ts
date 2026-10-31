@@ -2,6 +2,8 @@ export const NOTE_MAX = 140
 export const SUMMARY_MAX = 200
 /** Cap for stop and country names; matches the trip-title cap. */
 export const NAME_MAX = 80
+export const TITLE_MAX = 80
+export const URL_MAX = 300
 
 export interface Stop {
   name: string
@@ -14,6 +16,11 @@ export interface Stop {
   start?: string
   /** Departure date, ISO `YYYY-MM-DD`. Omitted for single-day stops. */
   end?: string
+  /** Optional http(s) link (photos, a post) shown on the stop card. */
+  url?: string
+  /** Client-only identity for list keys and the open editor. Never stored or
+   *  shared; assigned at every entry point by `withIds`. */
+  id?: string
 }
 
 export interface Trip {
@@ -53,6 +60,21 @@ export function cleanDate(x: unknown): string | undefined {
   return d.toISOString().slice(0, 10) === x ? x : undefined
 }
 
+/** Accept only absolute http(s) URLs up to URL_MAX. Anything else (including
+ *  `javascript:` from a crafted link) is dropped, never rendered. Over-long
+ *  URLs are rejected rather than truncated, since a cut URL is a broken one. */
+export function cleanUrl(x: unknown): string | undefined {
+  if (typeof x !== 'string') return undefined
+  const trimmed = x.trim()
+  if (!trimmed || trimmed.length > URL_MAX) return undefined
+  try {
+    const { protocol } = new URL(trimmed)
+    return protocol === 'http:' || protocol === 'https:' ? trimmed : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export function isValidStop(x: unknown): x is Stop {
   if (!x || typeof x !== 'object') return false
   const s = x as Record<string, unknown>
@@ -86,8 +108,38 @@ export function parseStops(data: unknown): Stop[] {
     // An end date only means something alongside a start, and never before it.
     const end = cleanDate(raw.end)
     if (start && end && end >= start) stop.end = end
+    const url = cleanUrl(raw.url)
+    if (url) stop.url = url
     return stop
   })
+}
+
+/** Give every stop a client-only id. Called wherever stops enter the app
+ *  (add, autosave, share link, library, hash change), never in an effect. */
+export function withIds(stops: Stop[]): Stop[] {
+  return stops.map((s) => (s.id ? s : { ...s, id: crypto.randomUUID() }))
+}
+
+/** A trip reduced to what the library stores, run through the same
+ *  sanitizers the library applies on read. Two trips are the same saved work
+ *  exactly when these match. */
+function normalizeTrip(trip: { title?: string; summary?: string; stops: Stop[] }): string {
+  return JSON.stringify({
+    title: cleanText(trip.title, TITLE_MAX) ?? '',
+    summary: cleanText(trip.summary, SUMMARY_MAX) ?? '',
+    stops: parseStops(trip.stops.map(serializeStop)),
+  })
+}
+
+/** True when the working trip has stops that no library entry holds. Matching
+ *  on content (not the saved id) keeps a reload from looking like unsaved work. */
+export function isUnsaved(
+  trip: { title?: string; summary?: string; stops: Stop[] },
+  library: { title: string; summary?: string; stops: Stop[] }[],
+): boolean {
+  if (trip.stops.length === 0) return false
+  const current = normalizeTrip(trip)
+  return !library.some((entry) => normalizeTrip(entry) === current)
 }
 
 /** Strip a stop down to its own fields. `react-globe.gl` attaches a three.js
@@ -99,6 +151,7 @@ export function serializeStop(s: Stop): Stop {
   if (s.note) out.note = s.note
   if (s.start) out.start = s.start
   if (s.start && s.end) out.end = s.end
+  if (s.url) out.url = s.url
   return out
 }
 

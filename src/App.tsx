@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import type { GlobeMethods } from 'react-globe.gl'
-import { tripArcs, type PlayArc, type Stop, type Trip } from './types'
+import { tripArcs, withIds, type PlayArc, type Stop, type Trip } from './types'
 import { ErrorBoundary } from './ErrorBoundary'
 import Unsupported from './Unsupported'
 import { hasWebGL } from './webgl'
@@ -37,17 +37,18 @@ function GlobeStage() {
   const globeRef = useRef<GlobeMethods | undefined>(undefined)
   const { w, h } = useWindowSize()
   const sharedTrip = useMemo(tripFromHash, [])
-  const initialTrip = useMemo(() => sharedTrip ?? loadTrip(), [sharedTrip])
+  const initial = useMemo(() => (sharedTrip ? { trip: sharedTrip, currentId: null } : loadTrip()), [sharedTrip])
+  const initialTrip = initial.trip
   const [readOnly, setReadOnly] = useState(sharedTrip !== null)
   const [title, setTitle] = useState(initialTrip.title ?? '')
   const [summary, setSummary] = useState(initialTrip.summary ?? '')
-  const [stops, setStops] = useState<Stop[]>(initialTrip.stops)
+  const [stops, setStops] = useState<Stop[]>(() => withIds(initialTrip.stops))
   const arcs = useMemo(() => tripArcs(stops), [stops])
 
   // Trip library (explicit named saves, separate from the autosaved working trip).
   const [library, setLibrary] = useState<SavedTrip[]>(() => (sharedTrip ? [] : listTrips()))
   const [libOpen, setLibOpen] = useState(false)
-  const [currentId, setCurrentId] = useState<string | null>(null)
+  const [currentId, setCurrentId] = useState<string | null>(initial.currentId)
   const { mode, step, play } = usePlayback(globeRef, stops, arcs)
   const autoPlayed = useRef(false)
 
@@ -64,9 +65,9 @@ function GlobeStage() {
   // saved trip while viewing someone else's shared link.
   useEffect(() => {
     if (!readOnly) {
-      saveTrip({ title: title.trim() || undefined, summary: summary.trim() || undefined, stops })
+      saveTrip({ title: title.trim() || undefined, summary: summary.trim() || undefined, stops }, currentId)
     }
-  }, [stops, title, summary, readOnly])
+  }, [stops, title, summary, readOnly, currentId])
 
   // Pasting a share link while the app is already open is a same-document
   // navigation, so nothing reloads. Pick the new trip up by hand. `clearHash`
@@ -77,7 +78,7 @@ function GlobeStage() {
       if (!shared) return
       setTitle(shared.title ?? '')
       setSummary(shared.summary ?? '')
-      setStops(shared.stops)
+      setStops(withIds(shared.stops))
       setCurrentId(null)
       setReadOnly(true)
       autoPlayed.current = false
@@ -111,7 +112,7 @@ function GlobeStage() {
   }
 
   function addStop(stop: Stop) {
-    setStops((prev) => [...prev, stop])
+    setStops((prev) => [...prev, ...withIds([stop])])
     // Fly the camera to the freshly added stop.
     globeRef.current?.pointOfView({ lat: stop.lat, lng: stop.lng, altitude: 1.8 }, 900)
   }
@@ -153,7 +154,7 @@ function GlobeStage() {
     setReadOnly(false)
     setTitle(t.title)
     setSummary(t.summary ?? '')
-    setStops(t.stops)
+    setStops(withIds(t.stops))
     setCurrentId(t.id)
     setLibOpen(false)
     globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
@@ -170,12 +171,12 @@ function GlobeStage() {
   // the shared trip was never persisted.
   function createOwn() {
     clearHash()
-    const own = loadTrip()
+    const { trip: own, currentId: ownId } = loadTrip()
     setReadOnly(false)
     setTitle(own.title ?? '')
     setSummary(own.summary ?? '')
-    setStops(own.stops)
-    setCurrentId(null)
+    setStops(withIds(own.stops))
+    setCurrentId(ownId)
     setLibrary(listTrips())
     globeRef.current?.pointOfView({ lat: 25, lng: 10, altitude: 2.4 }, 900)
   }

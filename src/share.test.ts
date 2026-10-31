@@ -28,3 +28,17 @@ describe('share link regression', () => {
     expect(decodeTrip(payload)).toBeNull()
   })
 })
+
+describe('share links v1.2', () => {
+  it('carries a stop link under the short key and drops unsafe ones', () => {
+    const trip = {
+      stops: [
+        { name: 'A', country: 'X', lat: 1, lng: 2, url: 'https://example.com/a' },
+        { name: 'B', country: 'X', lat: 3, lng: 4, url: 'javascript:alert(1)' },
+      ],
+    }
+    const decoded = decodeTrip(encodeTrip(trip))!
+    expect(decoded.stops[0].url).toBe('https://example.com/a')
+    expect(decoded.stops[1].url).toBeUndefined()
+  })
+})
