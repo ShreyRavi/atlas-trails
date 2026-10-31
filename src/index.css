@@ -1,11 +1,11 @@
 :root {
   --bg: #060912;
   --arc: #38e8ff;
-  --danger: #ff6b6b;
+  --danger: #ff8a8a;
   --fg: #e8edf5;
   --panel: rgba(13, 18, 32, 0.82);
   --panel-border: rgba(120, 140, 180, 0.22);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Instrument Sans Variable", system-ui, sans-serif;
   color-scheme: dark;
 }
 
@@ -65,7 +65,7 @@ body,
 .trips-empty {
   padding: 10px 12px;
   font-size: 13px;
-  opacity: 0.6;
+  opacity: 0.85;
 }
 .trips-list {
   list-style: none;
@@ -99,16 +99,17 @@ body,
 }
 .trips-meta {
   font-size: 12px;
-  opacity: 0.55;
+  opacity: 0.75;
 }
 .trips-del {
   border: none;
   background: transparent;
   color: var(--fg);
   font-size: 18px;
-  opacity: 0.45;
+  opacity: 0.6;
   cursor: pointer;
   padding: 0 10px;
+  position: relative;
 }
 .trips-del:hover {
   opacity: 1;
@@ -163,7 +164,7 @@ body,
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
 .cb-input::placeholder {
-  color: rgba(232, 237, 245, 0.45);
+  color: rgba(232, 237, 245, 0.55);
 }
 .cb-input:focus {
   border-color: var(--arc);
@@ -190,7 +191,7 @@ body,
   gap: 10px;
   padding: 10px 12px;
   font-size: 14px;
-  opacity: 0.7;
+  opacity: 0.85;
 }
 .cb-ww-btn {
   flex: none;
@@ -229,7 +230,7 @@ body,
 .cb-country {
   font-size: 12px;
   letter-spacing: 0.06em;
-  opacity: 0.55;
+  opacity: 0.75;
 }
 
 .cb-title-input {
@@ -246,7 +247,7 @@ body,
   outline: none;
 }
 .cb-title-input::placeholder {
-  color: rgba(232, 237, 245, 0.4);
+  color: rgba(232, 237, 245, 0.55);
   font-weight: 500;
 }
 .cb-title-input:focus {
@@ -259,6 +260,7 @@ body,
   color: var(--arc);
   opacity: 0.9;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
+  font-variant-numeric: tabular-nums;
 }
 .cb-title-view {
   margin: 0;
@@ -386,7 +388,7 @@ body,
   resize: vertical;
 }
 .cb-summary-input::placeholder {
-  color: rgba(232, 237, 245, 0.4);
+  color: rgba(232, 237, 245, 0.55);
 }
 .cb-summary-input:focus {
   border-color: var(--arc);
@@ -424,16 +426,17 @@ body,
   margin-top: 2px;
 }
 .cb-stop-date {
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.02em;
   color: var(--arc);
   opacity: 0.85;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 .cb-stop-note {
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.45;
-  opacity: 0.75;
+  opacity: 0.85;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -448,7 +451,7 @@ body,
   min-width: 220px;
   padding: 7px 9px;
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.45;
   color: var(--fg);
   background: rgba(255, 255, 255, 0.04);
@@ -467,7 +470,7 @@ body,
 }
 .cb-date-input {
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--fg);
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--panel-border);
@@ -483,14 +486,14 @@ body,
   opacity: 0.4;
 }
 .cb-date-sep {
-  font-size: 11px;
-  opacity: 0.5;
+  font-size: 12px;
+  opacity: 0.75;
 }
 .cb-note-count {
   margin-left: auto;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.04em;
-  opacity: 0.45;
+  opacity: 0.75;
   font-variant-numeric: tabular-nums;
 }
 
@@ -901,4 +904,35 @@ body,
   .stop-card.is-leaving {
     opacity: 0;
   }
+}
+
+/* 44px hit area for the library's delete control (6.3). */
+.trips-del::before {
+  content: '';
+  position: absolute;
+  inset: -8px -2px;
+}
+.trips-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}
+.unsupported-icon {
+  color: var(--arc);
+}
+
+/* Browser surfaces carry the palette too. */
+::selection {
+  background: rgba(56, 232, 255, 0.35);
+}
+input,
+textarea {
+  caret-color: var(--arc);
+}
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
 }

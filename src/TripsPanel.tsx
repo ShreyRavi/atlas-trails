@@ -1,4 +1,5 @@
 import type { SavedTrip } from './trips'
+import Icon from './Icon'
 
 interface Props {
   open: boolean
@@ -13,7 +14,8 @@ export default function TripsPanel({ open, trips, currentId, onToggle, onLoad, o
   return (
     <div className="trips">
       <button className="trips-toggle" onClick={onToggle} aria-expanded={open}>
-        ☰ Trips{trips.length > 0 ? ` (${trips.length})` : ''}
+        <Icon name="list" />
+        Trips{trips.length > 0 ? ` (${trips.length})` : ''}
       </button>
       {open && (
         <div className="trips-panel">
@@ -35,7 +37,7 @@ export default function TripsPanel({ open, trips, currentId, onToggle, onLoad, o
                     onClick={() => onDelete(t.id)}
                     aria-label={`Delete ${t.title || 'Untitled trip'}`}
                   >
-                    ×
+                    <Icon name="close" size={16} />
                   </button>
                 </li>
               ))}
