@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { loadCities, searchCities, geocodeWorldwide, cityToStop, type City } from './cities'
-import { tripStats, NOTE_MAX, SUMMARY_MAX, type Stop } from './types'
-import type { PlayMode } from './usePlayback'
+import { tripStats, NOTE_MAX, SUMMARY_MAX, TITLE_MAX, URL_MAX, cleanUrl, type Stop } from './types'
+import { formatDates } from './format'
+import { stayLabel } from './playback'
+import Icon from './Icon'
 
 /** Nominatim asks for ~1 request/second; this also keeps the lookup off the
  *  critical path while someone is still typing. */
@@ -20,24 +22,15 @@ function StatsLine({ stops }: { stops: Stop[] }) {
   )
 }
 
-/** "Mar 3", "Mar 3 – 6", "Feb 28 – Mar 3", in the visitor's locale.
- *  `formatRange` collapses the shared month on its own; the fallback covers
- *  engines that lack it. */
-function formatDates(stop: Stop): string {
-  if (!stop.start) return ''
-  const opts: Intl.DateTimeFormatOptions = {
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'UTC',
-  }
-  const day = (iso: string) => new Date(`${iso}T00:00:00Z`)
-  const fmt = new Intl.DateTimeFormat(undefined, opts)
-  if (!stop.end || stop.end === stop.start) return fmt.format(day(stop.start))
-  try {
-    return fmt.formatRange(day(stop.start), day(stop.end))
-  } catch {
-    return `${fmt.format(day(stop.start))} – ${fmt.format(day(stop.end))}`
-  }
+/** Dates plus how long they stayed, e.g. "Mar 6 – 9 · 3 nights". */
+function StopWhen({ stop }: { stop: Stop }) {
+  if (!stop.start) return null
+  return (
+    <span className="cb-stop-date">
+      {formatDates(stop)}
+      <span className="cb-stop-stay">{stayLabel(stop)}</span>
+    </span>
+  )
 }
 
 interface Props {
@@ -46,16 +39,23 @@ interface Props {
   summary: string
   onTitleChange: (title: string) => void
   onSummaryChange: (summary: string) => void
-  onEditStop: (index: number, patch: Partial<Stop>) => void
+  onEditStop: (id: string, patch: Partial<Stop>) => void
   onAdd: (stop: Stop) => void
-  onRemove: (index: number) => void
-  onMove: (index: number, dir: -1 | 1) => void
+  onRemove: (id: string) => void
+  onMove: (id: string, dir: -1 | 1) => void
   onReset: () => void
   onPlay: () => void
   onSave: () => void
-  mode: PlayMode
+  /** True while a trip plays (flying, dwelling or paused). */
+  playing: boolean
+  /** True after a play-through finishes. */
+  done: boolean
   readOnly: boolean
+  /** The globe has loaded; Play stays hidden until then. */
+  globeReady: boolean
   getShareUrl: () => string
+  /** Clipboard was blocked: show the link so it can be copied by hand. */
+  onShareFallback: (url: string) => void
   onCreateOwn: () => void
 }
 
@@ -72,12 +72,14 @@ export default function CommandBar({
   onReset,
   onPlay,
   onSave,
-  mode,
+  playing,
+  done,
   readOnly,
+  globeReady,
   getShareUrl,
+  onShareFallback,
   onCreateOwn,
 }: Props) {
-  const playing = mode === 'playing'
   const [cities, setCities] = useState<City[] | null>(null)
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
@@ -85,7 +87,9 @@ export default function CommandBar({
   const [saved, setSaved] = useState(false)
   const [wwResults, setWwResults] = useState<City[] | null>(null)
   const [wwLoading, setWwLoading] = useState(false)
-  const [openNote, setOpenNote] = useState<number | null>(null)
+  /** The stop whose editor is open, by id, so reorders and deletes can't
+   *  move the editor onto a different stop. */
+  const [openId, setOpenId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   function save() {
@@ -165,15 +169,36 @@ export default function CommandBar({
       setCopied(true)
       setTimeout(() => setCopied(false), 1800)
     } catch {
-      // Clipboard blocked (insecure context / permissions) — let the user copy by hand.
-      window.prompt('Copy your share link:', url)
+      onShareFallback(url)
     }
   }
 
-  const playLabel = mode === 'done' ? '↺ Replay' : '▶ Play'
+  const shareButton = (
+    <button className="cb-btn cb-btn-ghost" onClick={share}>
+      <Icon name={copied ? 'check' : 'link'} />
+      {copied ? 'Copied' : 'Share'}
+    </button>
+  )
+  const playButton = (
+    <button className="cb-btn cb-btn-primary" onClick={onPlay}>
+      <Icon name={done ? 'replay' : 'play'} />
+      {done ? 'Replay' : 'Play'}
+    </button>
+  )
 
   // ---- Viewer (shared link) mode ----
   if (readOnly) {
+    // While the story plays, the card does the talking: just the title strip.
+    if (playing) {
+      return (
+        <div className="commandbar commandbar-collapsed">
+          <div className="cb-strip">
+            {title && <span className="cb-strip-title">{title}</span>}
+            <StatsLine stops={stops} />
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="commandbar">
         {title && <h1 className="cb-title-view">{title}</h1>}
@@ -183,14 +208,14 @@ export default function CommandBar({
           <ol className="cb-stops">
             {stops.map((s, i) => (
               <li
-                key={`${s.name}-${i}`}
+                key={s.id ?? i}
                 className={s.note ? 'cb-stop cb-stop-static cb-stop-expanded' : 'cb-stop cb-stop-static'}
               >
                 <span className="cb-stop-num">{i + 1}</span>
                 <span className="cb-stop-body">
                   <span className="cb-stop-head">
                     <span className="cb-stop-name">{s.name}</span>
-                    {s.start && <span className="cb-stop-date">{formatDates(s)}</span>}
+                    <StopWhen stop={s} />
                   </span>
                   {s.note && <span className="cb-stop-note">{s.note}</span>}
                 </span>
@@ -198,79 +223,77 @@ export default function CommandBar({
             ))}
           </ol>
         )}
-        {!playing && (
-          <div className="cb-actions">
-            <button className="cb-btn cb-btn-primary" onClick={onPlay}>
-              {playLabel}
-            </button>
-            <button className="cb-btn cb-btn-ghost" onClick={onCreateOwn}>
-              Create your own
-            </button>
-          </div>
-        )}
+        {!globeReady && <div className="cb-loading">Loading globe…</div>}
+        <div className="cb-actions">
+          {globeReady && playButton}
+          {shareButton}
+          <button className="cb-btn cb-btn-ghost" onClick={onCreateOwn}>
+            Create your own
+          </button>
+        </div>
       </div>
     )
   }
 
   // ---- Builder mode ----
+  if (playing) return null
+
   return (
     <div className="commandbar commandbar-builder">
-      {!playing && stops.length === 0 && (
+      {stops.length === 0 && (
         <div className="cb-hero">
           <h1>Atlas Trails</h1>
           <p>Add the cities of your trip, hit play, and watch it fly across the globe.</p>
         </div>
       )}
-      {!playing && (
-        <div className="cb-input-wrap">
-          <input
-            ref={inputRef}
-            className="cb-input"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder={cities === null ? 'Loading cities…' : 'Add a city…'}
-            disabled={cities === null}
-            autoFocus
-            aria-label="Add a city to your trip"
-          />
-          {options.length > 0 && (
-            <ul className="cb-results" role="listbox">
-              {options.map((city, i) => (
-                <li
-                  key={`${city.n}-${city.c}-${city.lat}`}
-                  role="option"
-                  aria-selected={i === active}
-                  className={i === active ? 'cb-result cb-result-active' : 'cb-result'}
-                  onMouseEnter={() => setActive(i)}
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    add(city)
-                  }}
-                >
-                  <span className="cb-city">{city.n}</span>
-                  <span className="cb-country">{city.c || '🌍'}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {options.length === 0 && noLocalMatch && (
-            <div className="cb-results cb-empty">
-              {wwLoading ? 'Searching worldwide…' : `Nothing found for “${trimmed}”.`}
-            </div>
-          )}
-          {cities !== null && trimmed !== '' && trimmed.length < 3 && results.length === 0 && (
-            <div className="cb-results cb-empty">Keep typing…</div>
-          )}
-        </div>
-      )}
+      <div className="cb-input-wrap">
+        <input
+          ref={inputRef}
+          className="cb-input"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder={cities === null ? 'Loading cities…' : 'Add a city…'}
+          disabled={cities === null}
+          autoFocus
+          aria-label="Add a city to your trip"
+        />
+        {options.length > 0 && (
+          <ul className="cb-results" role="listbox">
+            {options.map((city, i) => (
+              <li
+                key={`${city.n}-${city.c}-${city.lat}`}
+                role="option"
+                aria-selected={i === active}
+                className={i === active ? 'cb-result cb-result-active' : 'cb-result'}
+                onMouseEnter={() => setActive(i)}
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  add(city)
+                }}
+              >
+                <span className="cb-city">{city.n}</span>
+                <span className="cb-country">{city.c || <Icon name="globe" size={14} />}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {options.length === 0 && noLocalMatch && (
+          <div className="cb-results cb-empty">
+            {wwLoading ? 'Searching worldwide…' : `Nothing found for “${trimmed}”.`}
+          </div>
+        )}
+        {cities !== null && trimmed !== '' && trimmed.length < 3 && results.length === 0 && (
+          <div className="cb-results cb-empty">Keep typing…</div>
+        )}
+      </div>
 
-      {stops.length > 0 && !playing && (
+      {stops.length > 0 && (
         <>
           <input
             className="cb-title-input"
             value={title}
-            maxLength={80}
+            maxLength={TITLE_MAX}
             onChange={(e) => onTitleChange(e.target.value)}
             placeholder="Name your trip…"
             aria-label="Trip title"
@@ -285,106 +308,62 @@ export default function CommandBar({
             aria-label="Trip summary"
           />
           <ol className="cb-stops">
-            {stops.map((s, i) => (
-              <li
-                key={`${s.name}-${i}`}
-                className={openNote === i || s.note ? 'cb-stop cb-stop-expanded' : 'cb-stop'}
-              >
-                <span className="cb-stop-num">{i + 1}</span>
-                <span className="cb-stop-body">
-                  <span className="cb-stop-head">
-                    <span className="cb-stop-name">{s.name}</span>
-                    {s.start && <span className="cb-stop-date">{formatDates(s)}</span>}
-                    <button
-                      className={s.note || s.start ? 'cb-stop-note-btn cb-has-note' : 'cb-stop-note-btn'}
-                      onClick={() => setOpenNote(openNote === i ? null : i)}
-                      aria-expanded={openNote === i}
-                      aria-label={`${s.note || s.start ? 'Edit' : 'Add'} notes and dates for ${s.name}`}
-                    >
-                      ✎
-                    </button>
-                    <button
-                      className="cb-stop-move"
-                      onClick={() => onMove(i, -1)}
-                      disabled={i === 0}
-                      aria-label={`Move ${s.name} earlier`}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      className="cb-stop-move"
-                      onClick={() => onMove(i, 1)}
-                      disabled={i === stops.length - 1}
-                      aria-label={`Move ${s.name} later`}
-                    >
-                      ↓
-                    </button>
-                    <button
-                      className="cb-stop-x"
-                      onClick={() => onRemove(i)}
-                      aria-label={`Remove ${s.name}`}
-                    >
-                      ×
-                    </button>
-                  </span>
-                  {openNote === i ? (
-                    <span className="cb-stop-editor">
-                      <textarea
-                        className="cb-note-input"
-                        value={s.note ?? ''}
-                        maxLength={NOTE_MAX}
-                        rows={2}
-                        autoFocus
-                        placeholder="What happened here?"
-                        aria-label={`Note for ${s.name}`}
-                        onChange={(e) => onEditStop(i, { note: e.target.value })}
-                      />
-                      <span className="cb-date-row">
-                        <input
-                          type="date"
-                          className="cb-date-input"
-                          value={s.start ?? ''}
-                          aria-label={`Arrival date for ${s.name}`}
-                          onChange={(e) =>
-                            onEditStop(i, {
-                              start: e.target.value || undefined,
-                              // An end date without a start is meaningless.
-                              ...(e.target.value ? {} : { end: undefined }),
-                            })
-                          }
-                        />
-                        <span className="cb-date-sep">→</span>
-                        <input
-                          type="date"
-                          className="cb-date-input"
-                          value={s.end ?? ''}
-                          min={s.start}
-                          disabled={!s.start}
-                          aria-label={`Departure date for ${s.name}`}
-                          onChange={(e) => onEditStop(i, { end: e.target.value || undefined })}
-                        />
-                        <span className="cb-note-count">
-                          {(s.note ?? '').length}/{NOTE_MAX}
-                        </span>
-                      </span>
+            {stops.map((s, i) => {
+              const id = s.id ?? String(i)
+              const open = openId === id
+              const annotated = !!(s.note || s.start || s.url)
+              return (
+                <li key={id} className={open || s.note ? 'cb-stop cb-stop-expanded' : 'cb-stop'}>
+                  <span className="cb-stop-num">{i + 1}</span>
+                  <span className="cb-stop-body">
+                    <span className="cb-stop-head">
+                      <span className="cb-stop-name">{s.name}</span>
+                      <StopWhen stop={s} />
+                      <button
+                        className={annotated ? 'cb-icon-btn cb-has-note' : 'cb-icon-btn'}
+                        onClick={() => setOpenId(open ? null : id)}
+                        aria-expanded={open}
+                        aria-label={`${annotated ? 'Edit' : 'Add'} notes, dates and link for ${s.name}`}
+                      >
+                        <Icon name="edit" size={14} />
+                      </button>
+                      <button
+                        className="cb-icon-btn"
+                        onClick={() => onMove(id, -1)}
+                        disabled={i === 0}
+                        aria-label={`Move ${s.name} earlier`}
+                      >
+                        <Icon name="up" size={14} />
+                      </button>
+                      <button
+                        className="cb-icon-btn"
+                        onClick={() => onMove(id, 1)}
+                        disabled={i === stops.length - 1}
+                        aria-label={`Move ${s.name} later`}
+                      >
+                        <Icon name="down" size={14} />
+                      </button>
+                      <button className="cb-icon-btn" onClick={() => onRemove(id)} aria-label={`Remove ${s.name}`}>
+                        <Icon name="close" size={14} />
+                      </button>
                     </span>
-                  ) : (
-                    s.note && <span className="cb-stop-note">{s.note}</span>
-                  )}
-                </span>
-              </li>
-            ))}
+                    {open ? (
+                      <StopEditor stop={s} onEdit={(patch) => onEditStop(id, patch)} />
+                    ) : (
+                      s.note && <span className="cb-stop-note">{s.note}</span>
+                    )}
+                  </span>
+                </li>
+              )
+            })}
           </ol>
-          {mode === 'done' && <StatsLine stops={stops} />}
+          {done && <StatsLine stops={stops} />}
           <div className="cb-actions">
-            <button className="cb-btn cb-btn-primary" onClick={onPlay}>
-              {playLabel}
-            </button>
-            <button className="cb-btn cb-btn-ghost" onClick={share}>
-              {copied ? '✓ Copied' : '🔗 Share'}
-            </button>
+            {playButton}
+            {shareButton}
             <button className="cb-btn cb-btn-ghost" onClick={save}>
-              {saved ? '✓ Saved' : '☆ Save'}
+              <Icon name={saved ? 'check' : 'star'} />
+              {saved ? 'Saved' : 'Save'}
             </button>
             <button className="cb-btn cb-btn-ghost" onClick={onReset}>
               Reset
@@ -393,5 +372,70 @@ export default function CommandBar({
         </>
       )}
     </div>
+  )
+}
+
+function StopEditor({ stop, onEdit }: { stop: Stop; onEdit: (patch: Partial<Stop>) => void }) {
+  // The link is edited as free text and only committed once it's a valid
+  // http(s) URL, so half-typed input never reaches storage or share links.
+  const [urlDraft, setUrlDraft] = useState(stop.url ?? '')
+  const urlInvalid = urlDraft.trim() !== '' && !cleanUrl(urlDraft)
+
+  return (
+    <span className="cb-stop-editor">
+      <textarea
+        className="cb-note-input"
+        value={stop.note ?? ''}
+        maxLength={NOTE_MAX}
+        rows={2}
+        autoFocus
+        placeholder="What happened here?"
+        aria-label={`Note for ${stop.name}`}
+        onChange={(e) => onEdit({ note: e.target.value })}
+      />
+      <span className="cb-date-row">
+        <input
+          type="date"
+          className="cb-date-input"
+          value={stop.start ?? ''}
+          aria-label={`Arrival date for ${stop.name}`}
+          onChange={(e) =>
+            onEdit({
+              start: e.target.value || undefined,
+              // An end date without a start is meaningless.
+              ...(e.target.value ? {} : { end: undefined }),
+            })
+          }
+        />
+        <span className="cb-date-sep">→</span>
+        <input
+          type="date"
+          className="cb-date-input"
+          value={stop.end ?? ''}
+          min={stop.start}
+          disabled={!stop.start}
+          aria-label={`Departure date for ${stop.name}`}
+          onChange={(e) => onEdit({ end: e.target.value || undefined })}
+        />
+        <span className="cb-note-count">
+          {(stop.note ?? '').length}/{NOTE_MAX}
+        </span>
+      </span>
+      <input
+        type="url"
+        className={urlInvalid ? 'cb-url-input is-invalid' : 'cb-url-input'}
+        value={urlDraft}
+        maxLength={URL_MAX}
+        placeholder="Link (photos, a post…)"
+        aria-label={`Link for ${stop.name}`}
+        aria-invalid={urlInvalid}
+        onChange={(e) => {
+          setUrlDraft(e.target.value)
+          const url = cleanUrl(e.target.value)
+          if (url || e.target.value.trim() === '') onEdit({ url })
+        }}
+      />
+      {urlInvalid && <span className="cb-field-hint">Use a full link starting with https://</span>}
+    </span>
   )
 }

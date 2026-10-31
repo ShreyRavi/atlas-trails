@@ -1,83 +1,141 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import type { GlobeMethods } from 'react-globe.gl'
-import type { Arc, Stop } from './types'
+import {
+  BASE_ALTITUDE,
+  INITIAL,
+  fitAll,
+  flightPath,
+  flightPlan,
+  reduce,
+  type PlaybackEvent,
+  type PlaybackState,
+  type Pov,
+} from './playback'
+import type { Stop } from './types'
 
-export type PlayMode = 'idle' | 'playing' | 'done'
+const FINALE_MS = 1800
 
-export const STEP_MS = 1600
-const FLY_MS = 900
+/** `?speed=fast` divides every playback duration by 5, for the end-to-end
+ *  test. Honored only outside production builds, so it never ships. */
+function speedFactor(): number {
+  if (import.meta.env.MODE === 'production') return 1
+  return new URLSearchParams(location.search).get('speed') === 'fast' ? 5 : 1
+}
 
-/** Drives the sequential trip animation: flies the camera stop-to-stop while
- *  the newest arc draws itself. `step` is the index of the arc currently
- *  drawing (-1 when not playing a specific arc). Camera targets are derived
- *  from `arcs` (not `stops`) because consecutive duplicate stops produce fewer
- *  arcs, so arc indices and stop indices can diverge. */
-export function usePlayback(
-  globeRef: RefObject<GlobeMethods | undefined>,
-  stops: Stop[],
-  arcs: Arc[],
-) {
-  const arcCount = arcs.length
-  const [mode, setMode] = useState<PlayMode>('idle')
-  const [step, setStep] = useState(-1)
-  const timer = useRef<number | null>(null)
+function prefersReducedMotion(): boolean {
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+}
 
-  const clearTimer = () => {
-    if (timer.current !== null) {
-      clearTimeout(timer.current)
-      timer.current = null
+interface Options {
+  /** Latitude to aim south of each stop so the pin clears the bottom overlay. */
+  offsetLat: () => number
+}
+
+/** The side-effect half of guided playback: runs timers and the camera for
+ *  whatever the pure reducer in playback.ts says. Phase transitions are timer
+ *  driven; a requestAnimationFrame loop only renders the camera. Both are
+ *  cancelled whenever the state's `gen` moves on, so stale callbacks never
+ *  act. */
+export function usePlayback(globeRef: RefObject<GlobeMethods | undefined>, stops: Stop[], { offsetLat }: Options) {
+  const [state, setState] = useState<PlaybackState>(INITIAL)
+  const stopsRef = useRef(stops)
+  stopsRef.current = stops
+  const offsetRef = useRef(offsetLat)
+  offsetRef.current = offsetLat
+  /** When the current dwell (re)started, for computing elapsed time on pause. */
+  const dwellStartRef = useRef(0)
+  /** Duration of the flight in progress, for timing the arc's draw. */
+  const [flightMs, setFlightMs] = useState(0)
+  const speed = useRef(speedFactor()).current
+
+  const dispatch = useCallback((e: PlaybackEvent) => {
+    setState((s) => reduce(s, e, { stops: stopsRef.current }))
+  }, [])
+
+  const stateRef = useRef(state)
+  stateRef.current = state
+
+  /** Pause (button, drag, hidden tab, dialog): carries the elapsed dwell so the
+   *  reducer can keep only the remainder. */
+  const pause = useCallback((type: 'pause' | 'userDrag' = 'pause') => {
+    const s = stateRef.current
+    const elapsedMs = s.phase === 'dwelling' ? (performance.now() - dwellStartRef.current) * speed : 0
+    dispatch({ type, elapsedMs })
+  }, [dispatch, speed])
+
+  // Run each phase. Keyed on gen so every transition gets fresh timers.
+  useEffect(() => {
+    const g = globeRef.current
+    if (!g) return
+    const s = state
+    const controls = g.controls()
+    const reduced = prefersReducedMotion()
+    let timer: number | undefined
+    let raf: number | undefined
+
+    controls.autoRotate = s.phase === 'idle' || s.phase === 'done'
+
+    if (s.phase === 'flying') {
+      const target = stopsRef.current[s.index]
+      if (!target) return
+      const from = g.pointOfView() as Pov
+      const to: Pov = { lat: target.lat - offsetRef.current(), lng: target.lng, altitude: BASE_ALTITUDE }
+      const plan = flightPlan(from, target, reduced)
+      const duration = plan.durationMs / speed
+      setFlightMs(duration)
+      if (reduced) {
+        g.pointOfView(to, 0)
+      } else {
+        const start = performance.now()
+        const frame = (now: number) => {
+          const t = Math.min(1, (now - start) / duration)
+          g.pointOfView(flightPath(from, to, t, plan.rise), 0)
+          if (t < 1) raf = requestAnimationFrame(frame)
+        }
+        raf = requestAnimationFrame(frame)
+      }
+      timer = window.setTimeout(() => {
+        // Land exactly, even if frames were dropped or the tab was throttled.
+        g.pointOfView(to, 0)
+        dispatch({ type: 'tick' })
+      }, duration)
+    } else if (s.phase === 'dwelling') {
+      dwellStartRef.current = performance.now()
+      timer = window.setTimeout(() => dispatch({ type: 'tick' }), s.remainingMs / speed)
+    } else if (s.phase === 'done') {
+      g.pointOfView(fitAll(stopsRef.current), reduced ? 0 : FINALE_MS / speed)
     }
+
+    return () => {
+      if (timer !== undefined) clearTimeout(timer)
+      if (raf !== undefined) cancelAnimationFrame(raf)
+    }
+    // `state` is read through its gen; other fields only change with it.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.gen, globeRef, dispatch, speed])
+
+  // Editing the trip cancels playback and returns to build mode.
+  useEffect(() => {
+    dispatch({ type: 'stop' })
+  }, [stops, dispatch])
+
+  // The story waits for the viewer: leaving the tab pauses, returning does not
+  // auto-resume.
+  useEffect(() => {
+    const onVisibility = () => {
+      const p = stateRef.current.phase
+      if (document.hidden && (p === 'flying' || p === 'dwelling')) pause()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [pause])
+
+  return {
+    state,
+    dispatch,
+    pause,
+    flightMs,
+    /** Multiply reducer durations by this for wall-clock time (test speed flag). */
+    timeScale: 1 / speed,
   }
-
-  const finish = useCallback(() => {
-    clearTimer()
-    setStep(-1)
-    setMode('done')
-    const g = globeRef.current
-    if (g) g.controls().autoRotate = true
-  }, [globeRef])
-
-  const play = useCallback(() => {
-    const g = globeRef.current
-    if (!g || stops.length === 0) return
-    clearTimer()
-    g.controls().autoRotate = false
-    setMode('playing')
-    setStep(-1)
-    g.pointOfView({ lat: stops[0].lat, lng: stops[0].lng, altitude: 1.9 }, FLY_MS)
-    if (arcCount === 0) {
-      // Single stop: dwell on the pin, then settle.
-      timer.current = window.setTimeout(finish, FLY_MS + 700)
-    } else {
-      timer.current = window.setTimeout(() => setStep(0), FLY_MS)
-    }
-  }, [globeRef, stops, arcCount, finish])
-
-  // Advance through arcs: fly to each arc's destination while it draws.
-  useEffect(() => {
-    if (mode !== 'playing' || step < 0) return
-    const g = globeRef.current
-    const dest = arcs[step]
-    if (g && dest) {
-      g.pointOfView({ lat: dest.endLat, lng: dest.endLng, altitude: 1.9 }, Math.round(STEP_MS * 0.7))
-    }
-    clearTimer()
-    timer.current = window.setTimeout(() => {
-      if (step < arcCount - 1) setStep((s) => s + 1)
-      else finish()
-    }, STEP_MS)
-    return clearTimer
-  }, [mode, step, arcs, arcCount, globeRef, finish])
-
-  // Editing the trip cancels any playback and returns to build mode.
-  useEffect(() => {
-    clearTimer()
-    setMode('idle')
-    setStep(-1)
-  }, [stops])
-
-  // Cleanup on unmount.
-  useEffect(() => clearTimer, [])
-
-  return { mode, step, play }
 }

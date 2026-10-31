@@ -38,8 +38,8 @@ export interface Arc {
 }
 
 /** An arc tagged for rendering: `_draw` marks the single arc currently
- *  animating during playback (all others render solid). */
-export type PlayArc = Arc & { _draw: boolean }
+ *  animating during playback (all others render solid), drawn over `_ms`. */
+export type PlayArc = Arc & { _draw: boolean; _ms: number }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
