@@ -1,5 +1,7 @@
 export const NOTE_MAX = 140
 export const SUMMARY_MAX = 200
+/** Cap for stop and country names; matches the trip-title cap. */
+export const NAME_MAX = 80
 
 export interface Stop {
   name: string
@@ -71,7 +73,12 @@ export function parseStops(data: unknown): Stop[] {
   if (!Array.isArray(data)) return []
   return data.filter(isValidStop).map((s) => {
     const raw = s as unknown as Record<string, unknown>
-    const stop: Stop = { name: s.name, country: s.country, lat: s.lat, lng: s.lng }
+    const stop: Stop = {
+      name: s.name.slice(0, NAME_MAX),
+      country: s.country.slice(0, NAME_MAX),
+      lat: s.lat,
+      lng: s.lng,
+    }
     const note = cleanText(raw.note, NOTE_MAX)
     if (note) stop.note = note
     const start = cleanDate(raw.start)

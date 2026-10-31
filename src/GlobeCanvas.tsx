@@ -2,6 +2,7 @@ import { useEffect, useMemo, type RefObject } from 'react'
 import Globe, { type GlobeMethods } from 'react-globe.gl'
 import type { PlayArc, Stop } from './types'
 import { STEP_MS } from './usePlayback'
+import { escapeHtml } from './escape'
 
 const GLOBE_IMG = '/earth-night.jpg'
 const GLOBE_BUMP = '/earth-topology.png'
@@ -58,7 +59,7 @@ export default function GlobeCanvas({ globeRef, width, height, arcs, stops, onRe
       pointColor={() => '#38e8ff'}
       pointAltitude={0.01}
       pointRadius={0.35}
-      pointLabel={(d: object) => (d as Stop).name}
+      pointLabel={(d: object) => escapeHtml((d as Stop).name)}
     />
   )
 }
