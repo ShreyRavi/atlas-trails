@@ -1,7 +1,6 @@
 import { useEffect, useMemo, type RefObject } from 'react'
 import Globe, { type GlobeMethods } from 'react-globe.gl'
 import type { PlayArc, Stop } from './types'
-import { STEP_MS } from './usePlayback'
 import { escapeHtml } from './escape'
 
 const GLOBE_IMG = '/earth-night.jpg'
@@ -14,11 +13,13 @@ interface Props {
   arcs: PlayArc[]
   stops: Stop[]
   onReady: () => void
+  /** The viewer grabbed or zoomed the globe. */
+  onUserInteract: () => void
 }
 
 /** The three.js globe. Lazy-loaded so the command bar paints before this heavy
  *  chunk arrives. */
-export default function GlobeCanvas({ globeRef, width, height, arcs, stops, onReady }: Props) {
+export default function GlobeCanvas({ globeRef, width, height, arcs, stops, onReady, onUserInteract }: Props) {
   // react-globe.gl mutates its points data, so hand it copies and keep the
   // app's own stop objects clean.
   const pointsData = useMemo(() => stops.map((s) => ({ ...s })), [stops])
@@ -31,35 +32,37 @@ export default function GlobeCanvas({ globeRef, width, height, arcs, stops, onRe
   }, [globeRef])
 
   return (
-    <Globe
-      ref={globeRef}
-      width={width}
-      height={height}
-      onGlobeReady={onReady}
-      globeImageUrl={GLOBE_IMG}
-      bumpImageUrl={GLOBE_BUMP}
-      backgroundColor="#060912"
-      atmosphereColor="#3a8bff"
-      atmosphereAltitude={0.18}
-      arcsData={arcs}
-      arcStartLat="startLat"
-      arcStartLng="startLng"
-      arcEndLat="endLat"
-      arcEndLng="endLng"
-      arcColor={() => ['rgba(56,232,255,0.2)', 'rgba(56,232,255,0.95)']}
-      arcStroke={0.55}
-      arcDashLength={1}
-      arcDashGap={(d: object) => ((d as PlayArc)._draw ? 1 : 0)}
-      arcDashInitialGap={(d: object) => ((d as PlayArc)._draw ? 1 : 0)}
-      arcDashAnimateTime={(d: object) => ((d as PlayArc)._draw ? STEP_MS : 0)}
-      arcAltitudeAutoScale={0.4}
-      pointsData={pointsData}
-      pointLat="lat"
-      pointLng="lng"
-      pointColor={() => '#38e8ff'}
-      pointAltitude={0.01}
-      pointRadius={0.35}
-      pointLabel={(d: object) => escapeHtml((d as Stop).name)}
-    />
+    <div className="globe-canvas" onPointerDown={onUserInteract} onWheel={onUserInteract}>
+      <Globe
+        ref={globeRef}
+        width={width}
+        height={height}
+        onGlobeReady={onReady}
+        globeImageUrl={GLOBE_IMG}
+        bumpImageUrl={GLOBE_BUMP}
+        backgroundColor="#060912"
+        atmosphereColor="#3a8bff"
+        atmosphereAltitude={0.18}
+        arcsData={arcs}
+        arcStartLat="startLat"
+        arcStartLng="startLng"
+        arcEndLat="endLat"
+        arcEndLng="endLng"
+        arcColor={() => ['rgba(56,232,255,0.2)', 'rgba(56,232,255,0.95)']}
+        arcStroke={0.55}
+        arcDashLength={1}
+        arcDashGap={(d: object) => ((d as PlayArc)._draw ? 1 : 0)}
+        arcDashInitialGap={(d: object) => ((d as PlayArc)._draw ? 1 : 0)}
+        arcDashAnimateTime={(d: object) => ((d as PlayArc)._draw ? (d as PlayArc)._ms : 0)}
+        arcAltitudeAutoScale={0.4}
+        pointsData={pointsData}
+        pointLat="lat"
+        pointLng="lng"
+        pointColor={() => '#38e8ff'}
+        pointAltitude={0.01}
+        pointRadius={0.35}
+        pointLabel={(d: object) => escapeHtml((d as Stop).name)}
+      />
+    </div>
   )
 }

@@ -1,5 +1,5 @@
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string'
-import { cleanText, parseStops, NOTE_MAX, SUMMARY_MAX, type Trip } from './types'
+import { cleanText, cleanUrl, parseStops, NOTE_MAX, SUMMARY_MAX, TITLE_MAX, type Trip } from './types'
 
 const HASH_PREFIX = '#t='
 const SCHEMA = 2
@@ -13,6 +13,7 @@ interface WireStop {
   nt?: string
   d1?: string
   d2?: string
+  u?: string
 }
 
 /** Serialize a trip into a compact, URL-safe payload. Notes and the summary are
@@ -31,6 +32,8 @@ export function encodeTrip(trip: Trip): string {
     if (note) stop.nt = note
     if (s.start) stop.d1 = s.start
     if (s.start && s.end) stop.d2 = s.end
+    const url = cleanUrl(s.url)
+    if (url) stop.u = url
     return stop
   })
   const payload: { v: number; s: WireStop[]; t?: string; sm?: string } = { v: SCHEMA, s: compact }
@@ -52,12 +55,12 @@ export function decodeTrip(payload: string): Trip | null {
     const stops = parseStops(
       wire.map((w) => {
         const s = w as Record<string, unknown>
-        return { ...s, note: s.nt, start: s.d1, end: s.d2 }
+        return { ...s, note: s.nt, start: s.d1, end: s.d2, url: s.u }
       }),
     )
     if (stops.length === 0) return null
     const trip: Trip = { stops }
-    const title = cleanText(data?.t, 80)
+    const title = cleanText(data?.t, TITLE_MAX)
     if (title) trip.title = title
     const summary = cleanText(data?.sm, SUMMARY_MAX)
     if (summary) trip.summary = summary
@@ -67,9 +70,18 @@ export function decodeTrip(payload: string): Trip | null {
   }
 }
 
+/** Where share links point. Set VITE_CANONICAL_ORIGIN (e.g.
+ *  https://atlas.kansoboard.com) in production so links never carry a
+ *  per-deploy or preview hostname; unset, links use the current page. */
+function shareBase(): string {
+  const canonical = import.meta.env.VITE_CANONICAL_ORIGIN as string | undefined
+  if (canonical) return canonical.replace(/\/+$/, '') + '/'
+  return `${location.origin}${location.pathname}`
+}
+
 /** Full shareable URL for a trip. */
 export function shareUrl(trip: Trip): string {
-  return `${location.origin}${location.pathname}${HASH_PREFIX}${encodeTrip(trip)}`
+  return `${shareBase()}${HASH_PREFIX}${encodeTrip(trip)}`
 }
 
 /** Read a shared trip from the current URL hash, or null if none/invalid. */

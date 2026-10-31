@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 .gstack/
 .vercel
+.env*
+
+# Playwright
+test-results
+playwright-report

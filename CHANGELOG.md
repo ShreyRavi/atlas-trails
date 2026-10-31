@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.2.0 — 2026-10-31
+
+- **Guided playback**: shared links (and the builder's Play) now stop at each
+  place. A card shows the stop, its dates, **how many nights** you stayed, your
+  note and an optional link, and holds long enough to read before flying on.
+  Pause, previous, next, jump to any stop, or exit; Space, arrows and Esc work
+  too. Dragging the globe, switching tabs or opening a dialog pauses.
+- **Cinematic flights**: one smooth flight along the great circle that climbs
+  on long hops, with the route line drawing in time. The finale pulls back to
+  frame the whole trip. Reduced-motion users get cuts instead of flights.
+- **Link per stop**: an optional http(s) link (photos, a post), shown by its
+  site name. Anything else, including `javascript:`, is dropped.
+- **Share from a shared link**: the viewer now has a Share button.
+- **Confirmations**: Reset, deleting a saved trip and loading over unsaved work
+  now ask first, in app dialogs on native `<dialog>`. No more browser prompts.
+- **Error screens**: crashes show a real error screen (Reload / Start fresh)
+  instead of the "needs WebGL" message, and a globe failure keeps the rest of
+  the app usable.
+- **Version tag** in the corner, linking to the deployed commit.
+- **New look**: Instrument Sans, SVG icons instead of emoji, readable contrast
+  throughout, 44px touch targets, visible focus rings. See `DESIGN.md`.
+- **Security**: tooltip labels are HTML-escaped (shipped earlier as a hotfix),
+  stop names are capped at 80 chars, and a strict Content-Security-Policy is
+  served.
+- Fix: the note editor stayed on a list position, so removing or reordering a
+  stop opened a different stop's editor. It now follows the stop.
+- Save after a reload updates the same saved trip instead of duplicating it.
+- Tests: Vitest unit suite (playback rules, flight math, dates, link and
+  storage regressions against golden fixtures) and a Playwright smoke test.
+- Domain: atlas.kansoboard.com.
+
 ## 1.1.0 — 2026-08-29
 
 - **Notes and dates per stop**: annotate each stop with a note (140 chars) and

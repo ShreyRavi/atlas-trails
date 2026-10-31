@@ -1,3 +1,5 @@
+import Icon from './Icon'
+
 /** Shown when WebGL is unavailable, so the user sees guidance instead of a
  *  blank globe. */
 export default function Unsupported() {
@@ -15,7 +17,9 @@ export default function Unsupported() {
         gap: 12,
       }}
     >
-      <div style={{ fontSize: 44 }}>🌍</div>
+      <div className="unsupported-icon">
+        <Icon name="globe" size={44} />
+      </div>
       <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>Atlas Trails needs WebGL</h1>
       <p style={{ margin: 0, maxWidth: 420, opacity: 0.7, lineHeight: 1.5 }}>
         The globe is rendered with WebGL, which your browser couldn't start. Try a
